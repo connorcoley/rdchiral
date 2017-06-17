@@ -7,8 +7,9 @@ import rdkit.Chem.AllChem as AllChem
 from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
 from itertools import chain
 from rdchiral.utils.parity4 import parity4
+import re
 
-PLEVEL = 10
+PLEVEL = 0
 
 def vprint(level, txt, *args):
     if PLEVEL >= level:
@@ -42,8 +43,27 @@ def initialize_reactants_from_smiles(reactant_smiles):
     reactants = Chem.MolFromSmiles(reactant_smiles)
     Chem.AssignStereochemistry(reactants, flagPossibleStereoCenters=True)
     reactants.UpdatePropertyCache()
-    vprint(2, 'Initialized reactants, assigned stereochem with flagpossiblestereocenters')
+    # To have the product atoms match reactant atoms, we
+    # need to populate the Isotope field, since this field
+    # gets copied over during the reaction.
+    [a.SetIsotope(i+1) for (i, a) in enumerate(reactants.GetAtoms())]
+    vprint(2, 'Initialized reactants, assigned isotopes, stereochem, flagpossiblestereocenters')
     return reactants
+
+
+def get_template_frags_from_rxn(rxn):
+    # Copy reaction template so we can play around with isotopes
+    for i, rct in enumerate(rxn.GetReactants()):
+        if i == 0:
+            template_r = rct
+        else:
+            template_r = AllChem.CombineMols(template_r, rct)
+    for i, prd in enumerate(rxn.GetProducts()):
+        if i == 0:
+            template_p = prd
+        else:
+            template_p = AllChem.CombineMols(template_p, prd)
+    return template_r, template_p
 
 def run_from_text(reaction_smarts, reactant_smiles, **kwargs):
     rxn = initialize_rxn_from_smarts(reaction_smarts)
@@ -146,19 +166,93 @@ def atom_chirality_matches(a_tmp, a_mol):
         print(only_in_src)
         raise KeyError('Pop from empty set')
 
+def canonicalize_outcome_smiles(outcome):
+    # Uniquify via SMILES string - a little sloppy
+    # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
+    # also, split by '.' and sort when outcome contains multiple molecules
+    outcome.UpdatePropertyCache()
+    smiles = Chem.MolToSmiles(outcome, True)
+    outcome = Chem.MolFromSmiles(smiles)
+    if outcome is None:
+        vprint(1, '~~ could not parse self?')
+        vprint(1, 'Attempted SMILES: {}', smiles)
+        return None
+    return  '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
 
+def combine_enantiomers_into_racemic(final_outcomes):
+    '''
+    If two products are identical except for an inverted CW/CCW or an
+    opposite cis/trans, then just strip that from the product. Return
+    the achiral one instead.
+    
+    This is not very sophisticated, since the chirality could affect the bond
+    order and thus the canonical SMILES. But, whatever. It also does not look
+    to invert multiple stereocenters at once
+    '''
 
-def run(rxn, reactants, keep_isotopes=False):
+    for smiles in list(final_outcomes)[:]:
+        # Look for @@ tetrahedral center
+        for match in re.finditer(r'@@', smiles):
+            smiles_inv = '%s@%s' % (smiles[:match.start()], smiles[match.end():])
+            if smiles_inv in final_outcomes:
+                final_outcomes.remove(smiles)
+                final_outcomes.remove(smiles_inv)
+                # Re-parse smiles so that hydrogens can become implicit
+                smiles = smiles[:match.start()] + smiles[match.end():]
+                outcome = Chem.MolFromSmiles(smiles)
+                if outcome is None:
+                    raise ValueError('Horrible mistake when fixing duplicate!')
+                smiles = '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
+                final_outcomes.add(smiles)
+
+        # Look for // or \\ trans bond
+        # where [^=\.] is any non-double bond or period or slash
+        for match in chain(re.finditer(r'(\/)([^=\.\\\/]+=[^=\.\\\/]+)(\/)', smiles), 
+                re.finditer(r'(\\)([^=\.\\\/]+=[^=\.\\\/]+)(\\)', smiles)):
+            # See if cis version is present in list of outcomes
+            opposite = {'\\': '/', '/': '\\'}
+            smiles_cis1 = '%s%s%s%s%s' % (smiles[:match.start()], 
+                match.group(1), match.group(2), opposite[match.group(3)],
+                smiles[match.end():]) 
+            smiles_cis2 = '%s%s%s%s%s' % (smiles[:match.start()], 
+                opposite[match.group(1)], match.group(2), match.group(3),
+                smiles[match.end():])
+            # Also look for equivalent trans
+            smiles_trans2 = '%s%s%s%s%s' % (smiles[:match.start()], 
+                opposite[match.group(1)], match.group(2), 
+                opposite[match.group(3)], smiles[match.end():])
+            # Kind of weird remove conditionals...
+            remove = False
+            if smiles_cis1 in final_outcomes:
+                final_outcomes.remove(smiles_cis1)
+                remove = True 
+            if smiles_cis2 in final_outcomes:
+                final_outcomes.remove(smiles_cis2)
+                remove = True 
+            if smiles_trans2 in final_outcomes and smiles in final_outcomes:
+                final_outcomes.remove(smiles_trans2)
+            if remove:
+                final_outcomes.remove(smiles)
+                smiles = smiles[:match.start()] + match.group(2) + smiles[match.end():]
+                outcome = Chem.MolFromSmiles(smiles)
+                if outcome is None:
+                    raise ValueError('Horrible mistake when fixing duplicate!')
+                smiles = '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
+                final_outcomes.add(smiles)
+    return final_outcomes
+
+def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
     '''
     rxn = RDKit reaction
     reactants = RDKit mol with all reactants together
-    '''
-    final_outcomes = set()
 
-    # To have the product atoms match reactant atoms, we
-    # need to populate the Isotope field, since this field
-    # gets copied over during the reaction.
-    [a.SetIsotope(i+1) for (i, a) in enumerate(reactants.GetAtoms())]
+    note: there is a fair amount of initialization (assigning stereochem), most
+    importantly assigning isotope numbers to the reactant atoms. It is 
+    HIGHLY recommended to use the intiialization functions in this file to load
+    from text, rather than load mols or reactions into RDKit yourself
+    '''
+
+    final_outcomes = set()
 
     # We need to keep track of what map numbers 
     # (i.e., isotopes) correspond to which atoms
@@ -166,16 +260,7 @@ def run(rxn, reactants, keep_isotopes=False):
     atoms_r = {a.GetIsotope(): a for a in reactants.GetAtoms()}
 
     # Copy reaction template so we can play around with isotopes
-    for i, rct in enumerate(rxn.GetReactants()):
-        if i == 0:
-            template_r = rct
-        else:
-            template_r = AllChem.CombineMols(template_r, rct)
-    for i, prd in enumerate(rxn.GetProducts()):
-        if i == 0:
-            template_p = prd
-        else:
-            template_p = AllChem.CombineMols(template_p, prd)
+    template_r, template_p = get_template_frags_from_rxn(rxn)
 
     atoms_rt_map = {a.GetIntProp('molAtomMapNumber'): a for a in template_r.GetAtoms() if a.HasProp('molAtomMapNumber')}
     atoms_pt_map = {a.GetIntProp('molAtomMapNumber'): a for a in template_p.GetAtoms() if a.HasProp('molAtomMapNumber')}
@@ -213,9 +298,6 @@ def run(rxn, reactants, keep_isotopes=False):
                 if not a.GetIsotope():
                     a.SetIsotope(unmapped)
                     unmapped += 1
-                else:
-                    pass
-                    #TODO: copy chirality
         vprint(2, 'Added {} map numbers to product', unmapped-900)
         ###############################################################################
 
@@ -257,6 +339,7 @@ def run(rxn, reactants, keep_isotopes=False):
         # reactions can be treated as pseudo-intramolecular
         # But! check for ring openings mistakenly split into multiple
         # This can be diagnosed by duplicate map numbers (i.e., SMILES)
+
         isotopes = [a.GetIsotope() for m in outcome \
             for a in m.GetAtoms() if a.GetIsotope()]
         if len(isotopes) != len(set(isotopes)): # duplicate?
@@ -397,30 +480,28 @@ def run(rxn, reactants, keep_isotopes=False):
                         vprint(3, 'Atom could/does have product template chirality!', a.GetIsotope())
                         vprint(3, '...so, copy chirality from product template')
                         copy_chirality(atoms_pt[a.GetIsotope()], a)
-                    print('New chiral tag {}'.format(a.GetChiralTag()))
-                    print('new mol: {}'.format(Chem.MolToSmiles(outcome, True)))
+                    vprint(3, 'New chiral tag {}', a.GetChiralTag())
+                    vprint(3, 'new mol: {}', Chem.MolToSmiles(outcome, True))
         vprint(2, 'After attempting to re-introduce chirality, outcome = {}',
             Chem.MolToSmiles(outcome, True))
         ###############################################################################
+
+
 
         # Clear isotope
         if not keep_isotopes:
             [a.SetIsotope(0) for a in outcome.GetAtoms()]
 
-        # Update property cache
-        outcome.UpdatePropertyCache()
+        # Canonicalize
+        smiles = canonicalize_outcome_smiles(outcome)
+        if smiles is not None:
+            final_outcomes.add(smiles)
 
-        # Uniquify via SMILES string - a little sloppy
-        # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
-        # also, split by '.' and sort when outcome contains multiple molecules
-        smiles = Chem.MolToSmiles(outcome, True)
-        outcome = Chem.MolFromSmiles(smiles)
-        if outcome is None:
-            vprint(1, '~~ could not parse self?')
-            vprint(1, 'Attempted SMILES: {}', smiles)
-            continue
-        smiles = '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
-        final_outcomes.add(smiles)
+    ###############################################################################
+    # One last fix for consolidating multiple stereospecified products...
+    if combine_enantiomers:
+        final_outcomes = combine_enantiomers_into_racemic(final_outcomes)
+    ###############################################################################
 
     return list(final_outcomes)
 
