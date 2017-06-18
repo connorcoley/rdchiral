@@ -1,250 +1,30 @@
 from __future__ import print_function
 import sys 
-sys.path.append('../../')
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import rdkit.Chem as Chem
 import rdkit.Chem.AllChem as AllChem
 from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
-from itertools import chain
-from rdchiral.utils.parity4 import parity4
 import re
 
-PLEVEL = 0
+from rdchiral.utils import vprint
+from rdchiral.initialization import rdchiralReaction, rdchiralReactants
+from rdchiral.chiral import template_atom_could_have_been_tetra, copy_chirality, atom_chirality_matches
+from rdchiral.clean import canonicalize_outcome_smiles, combine_enantiomers_into_racemic
 
-def vprint(level, txt, *args):
-    if PLEVEL >= level:
-        print(txt.format(*args))
+def rdchiralRun_from_text(reaction_smarts, reactant_smiles, **kwargs):
+    '''Run from SMARTS string and SMILES string. This is NOT recommended
+    for library application, since initialization is pretty slow. You should
+    separately initialize the template and molecules and call run()'''
+    rxn = rdchiralReaction(reaction_smarts)
+    reactants = rdchiralReactants(reactant_smiles)
+    return rdchiralRun(rxn, reactants, **kwargs)
 
-def initialize_rxn_from_smarts(reaction_smarts):
-    # Initialize reaction
-    rxn = AllChem.ReactionFromSmarts(reaction_smarts)
-    rxn.Initialize()
-    if rxn.Validate()[1] != 0:
-        raise ValueError('Could not validate reaction')
-    vprint(2, 'Validated rxn without errors')
-
-    unmapped = 700
-    for rct in rxn.GetReactants():
-        rct.UpdatePropertyCache()
-        Chem.AssignStereochemistry(rct)
-        # Fill in atom map numbers
-        for a in rct.GetAtoms():
-            if not a.HasProp('molAtomMapNumber'):
-                a.SetIntProp('molAtomMapNumber', unmapped)
-                unmapped += 1
-    vprint(2, 'Added {} map nums to unmapped reactants', unmapped-700)
-    if unmapped > 800:
-        raise ValueError('Why do you have so many unmapped atoms in the template reactants?')
-
-    return rxn
-
-def initialize_reactants_from_smiles(reactant_smiles):
-    # Initialize reactants
-    reactants = Chem.MolFromSmiles(reactant_smiles)
-    Chem.AssignStereochemistry(reactants, flagPossibleStereoCenters=True)
-    reactants.UpdatePropertyCache()
-    # To have the product atoms match reactant atoms, we
-    # need to populate the Isotope field, since this field
-    # gets copied over during the reaction.
-    [a.SetIsotope(i+1) for (i, a) in enumerate(reactants.GetAtoms())]
-    vprint(2, 'Initialized reactants, assigned isotopes, stereochem, flagpossiblestereocenters')
-    return reactants
-
-
-def get_template_frags_from_rxn(rxn):
-    # Copy reaction template so we can play around with isotopes
-    for i, rct in enumerate(rxn.GetReactants()):
-        if i == 0:
-            template_r = rct
-        else:
-            template_r = AllChem.CombineMols(template_r, rct)
-    for i, prd in enumerate(rxn.GetProducts()):
-        if i == 0:
-            template_p = prd
-        else:
-            template_p = AllChem.CombineMols(template_p, prd)
-    return template_r, template_p
-
-def run_from_text(reaction_smarts, reactant_smiles, **kwargs):
-    rxn = initialize_rxn_from_smarts(reaction_smarts)
-    reactants = initialize_reactants_from_smiles(reactant_smiles)
-
-    return run(rxn, reactants, **kwargs)
-
-def copy_chirality(a_src, a_new):
-
-    # Not possible to be a tetrahedral center anymore?
-    if a_new.GetDegree() < 3:
-        return 
-    if a_new.GetDegree() == 3 and \
-            any(b.GetBondType() != BondType.SINGLE for b in a_new.GetBonds()):
-        return
-
-    vprint(3, 'For isotope {}, copying src {} chirality tag to new',
-        a_src.GetIsotope(), a_src.GetChiralTag())
-    a_new.SetChiralTag(a_src.GetChiralTag())
-    
-    if not atom_chirality_matches(a_src, a_new):
-        vprint(3, 'For isotope {}, inverting chirality', a_new.GetIsotope())
-        a_new.InvertChirality()
-
-def template_atom_could_have_been_tetra(a):
+def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
     '''
-    Could this atom have been a tetrahedral center?
-    If yes, template atom is considered achiral and will not match a chiral rct
-    If no, the tempalte atom is auxilliary and should not rule out a product set
-    '''
-
-    if a.HasProp('tetra_possible'):
-        return a.GetBoolProp('tetra_possible')
-    if a.GetDegree() < 3 or (a.GetDegree() == 3 and 'H' not in a.GetSmarts()):
-        a.SetBoolProp('tetra_possible', False)
-        return False 
-    a.SetBoolProp('tetra_possible', True)
-    return True 
-
-def atom_chirality_matches(a_tmp, a_mol):
-    '''
-    Checks for consistency in chirality between a template atom and a molecule atom.
-
-    Also checks to see if chirality needs to be inverted in copy_chirality
-    '''
-    if a_mol.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
-        if a_tmp.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
-            vprint(3, 'atom {} is achiral & achiral -> match', a_mol.GetIsotope())
-            return True # achiral template, achiral molecule -> match
-        # What if the template was chiral, but the reactant isn't just due to symmetry?
-        if not a_mol.HasProp('_ChiralityPossible'):
-            # It's okay to make a match, as long as the product is achiral (even
-            # though the product template will try to impose chirality)
-            vprint(3, 'atom {} is specified in template, but cant possibly be chiral in mol', a_mol.GetIsotope())
-            return True
-
-        # TODO: figure out if we want this behavior - should a chiral template
-        # be applied to an achiral molecule? For the retro case, if we have
-        # a retro reaction that requires a specific stereochem, return False;
-        # however, there will be many cases where the reaction would probably work
-        vprint(3, 'atom {} is achiral in mol, but specified in template', a_mol.GetIsotope())
-        return False
-    if a_tmp.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
-        vprint(3, 'Reactant {} atom chiral, rtemplate achiral...', a_tmp.GetIsotope())
-        if template_atom_could_have_been_tetra(a_tmp):
-            vprint(3, '...and that atom could have had its chirality specified! no_match')
-            return False
-        vprint(3, '...but the rtemplate atom could not have had chirality specified, match anyway')
-        return True
-
-    isotopes_tmp = [a.GetIsotope() for a in a_tmp.GetNeighbors()]
-    isotopes_mol = [a.GetIsotope() for a in a_mol.GetNeighbors()]
-    if len(isotopes_tmp) < 4:
-        isotopes_tmp.append(-1) # H
-    if len(isotopes_mol) < 4:
-        isotopes_mol.append(-1) # H
-
-    try:
-        vprint(10, str(isotopes_tmp))
-        vprint(10, str(isotopes_mol))
-        vprint(10, str(a_tmp.GetChiralTag()))
-        vprint(10, str(a_mol.GetChiralTag()))
-        only_in_src = set(isotopes_tmp) - set(isotopes_mol)
-        if len(only_in_src) <= 1:
-            tmp_parity = parity4(isotopes_tmp)
-            mol_parity = parity4([i if i in isotopes_tmp else only_in_src.pop() for i in isotopes_mol])
-            vprint(10, str(tmp_parity))
-            vprint(10, str(mol_parity))
-            parity_matches = tmp_parity == mol_parity
-            tag_matches = a_tmp.GetChiralTag() == a_mol.GetChiralTag()
-            chirality_matches = parity_matches == tag_matches
-            vprint(2, 'Isotope {} chiral match? {}', a_tmp.GetIsotope(), chirality_matches)
-            return chirality_matches
-        else:
-            return True # ambiguous case, just return for now
-            # TODO: fix this?
-    except KeyError:
-        print(isotopes_tmp)
-        print(isotopes_mol)
-        print(only_in_src)
-        raise KeyError('Pop from empty set')
-
-def canonicalize_outcome_smiles(outcome):
-    # Uniquify via SMILES string - a little sloppy
-    # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
-    # also, split by '.' and sort when outcome contains multiple molecules
-    outcome.UpdatePropertyCache()
-    smiles = Chem.MolToSmiles(outcome, True)
-    outcome = Chem.MolFromSmiles(smiles)
-    if outcome is None:
-        vprint(1, '~~ could not parse self?')
-        vprint(1, 'Attempted SMILES: {}', smiles)
-        return None
-    return  '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
-
-def combine_enantiomers_into_racemic(final_outcomes):
-    '''
-    If two products are identical except for an inverted CW/CCW or an
-    opposite cis/trans, then just strip that from the product. Return
-    the achiral one instead.
-    
-    This is not very sophisticated, since the chirality could affect the bond
-    order and thus the canonical SMILES. But, whatever. It also does not look
-    to invert multiple stereocenters at once
-    '''
-
-    for smiles in list(final_outcomes)[:]:
-        # Look for @@ tetrahedral center
-        for match in re.finditer(r'@@', smiles):
-            smiles_inv = '%s@%s' % (smiles[:match.start()], smiles[match.end():])
-            if smiles_inv in final_outcomes:
-                final_outcomes.remove(smiles)
-                final_outcomes.remove(smiles_inv)
-                # Re-parse smiles so that hydrogens can become implicit
-                smiles = smiles[:match.start()] + smiles[match.end():]
-                outcome = Chem.MolFromSmiles(smiles)
-                if outcome is None:
-                    raise ValueError('Horrible mistake when fixing duplicate!')
-                smiles = '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
-                final_outcomes.add(smiles)
-
-        # Look for // or \\ trans bond
-        # where [^=\.] is any non-double bond or period or slash
-        for match in chain(re.finditer(r'(\/)([^=\.\\\/]+=[^=\.\\\/]+)(\/)', smiles), 
-                re.finditer(r'(\\)([^=\.\\\/]+=[^=\.\\\/]+)(\\)', smiles)):
-            # See if cis version is present in list of outcomes
-            opposite = {'\\': '/', '/': '\\'}
-            smiles_cis1 = '%s%s%s%s%s' % (smiles[:match.start()], 
-                match.group(1), match.group(2), opposite[match.group(3)],
-                smiles[match.end():]) 
-            smiles_cis2 = '%s%s%s%s%s' % (smiles[:match.start()], 
-                opposite[match.group(1)], match.group(2), match.group(3),
-                smiles[match.end():])
-            # Also look for equivalent trans
-            smiles_trans2 = '%s%s%s%s%s' % (smiles[:match.start()], 
-                opposite[match.group(1)], match.group(2), 
-                opposite[match.group(3)], smiles[match.end():])
-            # Kind of weird remove conditionals...
-            remove = False
-            if smiles_cis1 in final_outcomes:
-                final_outcomes.remove(smiles_cis1)
-                remove = True 
-            if smiles_cis2 in final_outcomes:
-                final_outcomes.remove(smiles_cis2)
-                remove = True 
-            if smiles_trans2 in final_outcomes and smiles in final_outcomes:
-                final_outcomes.remove(smiles_trans2)
-            if remove:
-                final_outcomes.remove(smiles)
-                smiles = smiles[:match.start()] + match.group(2) + smiles[match.end():]
-                outcome = Chem.MolFromSmiles(smiles)
-                if outcome is None:
-                    raise ValueError('Horrible mistake when fixing duplicate!')
-                smiles = '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
-                final_outcomes.add(smiles)
-    return final_outcomes
-
-def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
-    '''
-    rxn = RDKit reaction
-    reactants = RDKit mol with all reactants together
+    rxn = rdchiralReaction (rdkit reaction + auxilliary information)
+    reactants = rdchiralReactants (rdkit mol + auxilliary information)
 
     note: there is a fair amount of initialization (assigning stereochem), most
     importantly assigning isotope numbers to the reactant atoms. It is 
@@ -257,32 +37,22 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
     # We need to keep track of what map numbers 
     # (i.e., isotopes) correspond to which atoms
     # note: all reactant atoms must be mapped, so this is safe
-    atoms_r = {a.GetIsotope(): a for a in reactants.GetAtoms()}
+    atoms_r = reactants.atoms_r
 
     # Copy reaction template so we can play around with isotopes
-    template_r, template_p = get_template_frags_from_rxn(rxn)
+    template_r, template_p = rxn.template_r, rxn.template_p
 
-    atoms_rt_map = {a.GetIntProp('molAtomMapNumber'): a for a in template_r.GetAtoms() if a.HasProp('molAtomMapNumber')}
-    atoms_pt_map = {a.GetIntProp('molAtomMapNumber'): a for a in template_p.GetAtoms() if a.HasProp('molAtomMapNumber')}
+    # Get molAtomMapNum->atom dictionary for tempalte reactants and products
+    atoms_rt_map = rxn.atoms_rt_map
+    atoms_pt_map = rxn.atoms_pt_map
 
     ###############################################################################
-    # Run naive RDKit
+    # Run naive RDKit on ACHIRAL version of molecules
 
-    # Strip chirality first
-    chi_tags = [a.GetChiralTag() for a in reactants.GetAtoms()]
-    [a.SetChiralTag(ChiralType.CHI_UNSPECIFIED) for a in reactants.GetAtoms()]
-    vprint(3, 'Stripped chiral tags from reactants')
-    
-    outcomes = rxn.RunReactants((reactants,))
-    vprint(2, 'Using naive RunReactants on {}, {} outcomes', 
-        Chem.MolToSmiles(reactants, True), len(outcomes))
-
-    # Restore chiral tags
-    [a.SetChiralTag(chi_tags[i]) for (i, a) in enumerate(reactants.GetAtoms())]
-    vprint(3, 'Restored chiral tags to reactants')
+    outcomes = rxn.rxn.RunReactants((reactants.reactants_achiral,))
+    vprint(2, 'Using naive RunReactants, {} outcomes', len(outcomes))
     if not outcomes:
         return []
-
 
     ###############################################################################
 
@@ -306,9 +76,6 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         # Check to see if reactants should not have been matched (based on chirality)
 
         # Define isotope -> reactant template atom map
-        vprint(3, 'Isotopes with old_mapno field: {}'.format(
-            [a.GetIsotope() for m in outcome for a in m.GetAtoms() if a.HasProp('old_mapno')]
-        ))
         atoms_rt =  {a.GetIsotope(): atoms_rt_map[a.GetIntProp('old_mapno')] \
             for m in outcome for a in m.GetAtoms() if a.HasProp('old_mapno')}
 
@@ -325,10 +92,10 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
         # Check bond chirality
         # - add implicit cis to "reactant" bonds in rings swith double bond
-        for b in reactants.GetBonds():
+        for (i, j, b) in reactants.bonds_by_isotope:
             if b.IsInRing() and b.GetBondType() == BondType.DOUBLE:
                 pass
-        #TODO: add bond chirality?
+        #TODO: add bond chirality considerations?
 
         ###############################################################################
 
@@ -340,8 +107,7 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         # But! check for ring openings mistakenly split into multiple
         # This can be diagnosed by duplicate map numbers (i.e., SMILES)
 
-        isotopes = [a.GetIsotope() for m in outcome \
-            for a in m.GetAtoms() if a.GetIsotope()]
+        isotopes = [a.GetIsotope() for m in outcome for a in m.GetAtoms() if a.GetIsotope()]
         if len(isotopes) != len(set(isotopes)): # duplicate?
             vprint(1, 'Found duplicate isotopes in product - need to stitch')
             # need to do a fancy merge
@@ -376,7 +142,6 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
         ###############################################################################
         # Figure out which atoms were matched in the templates
-        # note: at least one outcome at this point, so outcomes[0] is safe
         # atoms_rt and atoms_p will be outcome-specific.
         atoms_pt = {a.GetIsotope(): atoms_pt_map[a.GetIntProp('old_mapno')] \
             for a in outcome.GetAtoms() if a.HasProp('old_mapno')}
@@ -396,9 +161,7 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         # not specified in the reactant template, and not in the product. Accidental
         # fragmentation can occur for intramolecular ring openings
         missing_bonds = []
-        for b in reactants.GetBonds():
-            i = b.GetBeginAtom().GetIsotope()
-            j = b.GetEndAtom().GetIsotope()
+        for (i, j, b) in reactants.bonds_by_isotope:
             if i in atoms_p and j in atoms_p:
                 # atoms from reactant bond show up in product
                 if not outcome.GetBondBetweenAtoms(atoms_p[i].GetIdx(), atoms_p[j].GetIdx()):
@@ -424,7 +187,7 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
 
         ###############################################################################
-        # Check for chirality
+        # Correct chirality in the outcome
 
         for a in outcome.GetAtoms():
             # Participants in reaction core (from reactants) will have old_mapno
@@ -432,32 +195,42 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
             # ...so new atoms will have neither!
             if not a.HasProp('old_mapno'):
                 # Not part of the reactants template
+                
                 if not a.HasProp('react_atom_idx'):
                     # Atoms only appear in product template - their chirality
                     # should be properly instantiated by RDKit...hopefully...
                     vprint(4, 'Atom {} created by product template, should have right chirality', a.GetIsotope())
+                
                 else:
                     vprint(4, 'Atom {} outside of template, copy chirality from reactants', a.GetIsotope())
                     copy_chirality(atoms_r[a.GetIsotope()], a)
             else:
                 # Part of reactants and reaction core
+                
                 if template_atom_could_have_been_tetra(atoms_rt[a.GetIsotope()]):
                     vprint(3, 'Atom {} was in rct template (could have been tetra)', a.GetIsotope())
+                    
                     if template_atom_could_have_been_tetra(atoms_pt[a.GetIsotope()]):
                         vprint(3, 'Atom {} in product template could have been tetra, too', a.GetIsotope())
+                        
                         # Was the product template specified?
+                        
                         if atoms_pt[a.GetIsotope()].GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
                             # No, leave unspecified in product
                             vprint(3, '...but it is not specified in product, so destroy chirality')
                             a.SetChiralTag(ChiralType.CHI_UNSPECIFIED)
+                        
                         else:
                             # Yes
                             vprint(3, '...and product is specified')
+                            
                             # Was the reactant template specified?
+                            
                             if atoms_rt[a.GetIsotope()].GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
                                 # No, so the reaction introduced chirality
                                 vprint(3, '...but reactant template was not, so copy from product template')
                                 copy_chirality(atoms_pt[a.GetIsotope()], a)
+                            
                             else:
                                 # Yes, so we need to check if chirality should be preserved or inverted
                                 vprint(3, '...and reactant template was, too! copy from reactants')
@@ -465,23 +238,29 @@ def run(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                                 if not atom_chirality_matches(atoms_pt[a.GetIsotope()], atoms_rt[a.GetIsotope()]):
                                     vprint(3, 'but! reactant template and product template have opposite stereochem, so invert')
                                     a.InvertChirality()
+                    
                     else:
+                        # Reactant template chiral, product template not - the
+                        # reaction is supposed to destroy chirality, so leave
+                        # unspecified
                         vprint(3, 'If reactant template could have been ' +
                             'chiral, but the product template could not, then we dont need ' +
                             'to worry about specifying product atom chirality')
 
                 else:
                     vprint(3, 'Atom {} could not have been chiral in reactant template', a.GetIsotope())
+                    
                     if not template_atom_could_have_been_tetra(atoms_pt[a.GetIsotope()]):
                         vprint(3, 'Atom {} also could not have been chiral in product template', a.GetIsotope())
                         vprint(3, '...so, copy chirality from reactant instead')
                         copy_chirality(atoms_r[a.GetIsotope()], a)
+                    
                     else:
                         vprint(3, 'Atom could/does have product template chirality!', a.GetIsotope())
                         vprint(3, '...so, copy chirality from product template')
                         copy_chirality(atoms_pt[a.GetIsotope()], a)
-                    vprint(3, 'New chiral tag {}', a.GetChiralTag())
-                    vprint(3, 'new mol: {}', Chem.MolToSmiles(outcome, True))
+                    
+            vprint(3, 'New chiral tag {}', a.GetChiralTag())
         vprint(2, 'After attempting to re-introduce chirality, outcome = {}',
             Chem.MolToSmiles(outcome, True))
         ###############################################################################

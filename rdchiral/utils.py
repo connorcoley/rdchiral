@@ -1,3 +1,10 @@
+from __future__ import print_function
+
+PLEVEL = 0
+def vprint(level, txt, *args):
+    if PLEVEL >= level:
+        print(txt.format(*args))
+
 def parity4(data):
     '''
     Thanks to http://www.dalkescientific.com/writings/diary/archive/2016/08/15/fragment_parity_calculation.html'''
