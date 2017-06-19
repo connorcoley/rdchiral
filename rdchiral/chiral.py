@@ -15,6 +15,9 @@ def template_atom_could_have_been_tetra(a):
         return a.GetBoolProp('tetra_possible')
     if a.GetDegree() < 3 or (a.GetDegree() == 3 and 'H' not in a.GetSmarts()):
         a.SetBoolProp('tetra_possible', False)
+        # Clear chiral tag in case improperly set (e.g., defined for an
+        # incomplete template
+        a.SetChiralTag(ChiralType.CHI_UNSPECIFIED)
         return False 
     a.SetBoolProp('tetra_possible', True)
     return True 
@@ -71,9 +74,9 @@ def atom_chirality_matches(a_tmp, a_mol):
 
     isotopes_tmp = [a.GetIsotope() for a in a_tmp.GetNeighbors()]
     isotopes_mol = [a.GetIsotope() for a in a_mol.GetNeighbors()]
-    if len(isotopes_tmp) < 4:
+    while len(isotopes_tmp) < 4:
         isotopes_tmp.append(-1) # H
-    if len(isotopes_mol) < 4:
+    while len(isotopes_mol) < 4:
         isotopes_mol.append(-1) # H
 
     try:
@@ -81,8 +84,9 @@ def atom_chirality_matches(a_tmp, a_mol):
         vprint(10, str(isotopes_mol))
         vprint(10, str(a_tmp.GetChiralTag()))
         vprint(10, str(a_mol.GetChiralTag()))
-        only_in_src = set(isotopes_tmp) - set(isotopes_mol)
-        if len(only_in_src) <= 1:
+        only_in_src = [i for i in isotopes_tmp if i not in isotopes_mol][::-1] # reverse for popping
+        only_in_mol = [i for i in isotopes_mol if i not in isotopes_tmp]
+        if len(only_in_src) <= 1 and len(only_in_mol) <= 1:
             tmp_parity = parity4(isotopes_tmp)
             mol_parity = parity4([i if i in isotopes_tmp else only_in_src.pop() for i in isotopes_mol])
             vprint(10, str(tmp_parity))
@@ -93,10 +97,16 @@ def atom_chirality_matches(a_tmp, a_mol):
             vprint(2, 'Isotope {} chiral match? {}', a_tmp.GetIsotope(), chirality_matches)
             return chirality_matches
         else:
+            vprint(2, 'Isotope {} chiral match? Based on isotope lists, ambiguous -> True', a_tmp.GetIsotope())
             return True # ambiguous case, just return for now
             # TODO: fix this?
-    except KeyError:
-        print(isotopes_tmp)
-        print(isotopes_mol)
-        print(only_in_src)
-        raise KeyError('Pop from empty set')
+
+    except IndexError as e:
+        print(a_tmp.GetPropsAsDict())
+        print(a_mol.GetPropsAsDict())
+        print(a_tmp.GetChiralTag())
+        print(a_mol.GetChiralTag())
+        vprint(1, str(e))
+        vprint(1, str(isotopes_tmp))
+        vprint(1, str(isotopes_mol))
+        raise KeyError('Pop from empty set - this should not happen!')

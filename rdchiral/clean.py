@@ -10,7 +10,6 @@ def canonicalize_outcome_smiles(outcome):
     # Uniquify via SMILES string - a little sloppy
     # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
     # also, split by '.' and sort when outcome contains multiple molecules
-    outcome.UpdatePropertyCache()
     smiles = Chem.MolToSmiles(outcome, True)
     outcome = Chem.MolFromSmiles(smiles)
     if outcome is None:
