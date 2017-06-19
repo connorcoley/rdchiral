@@ -7,7 +7,8 @@ def vprint(level, txt, *args):
 
 def parity4(data):
     '''
-    Thanks to http://www.dalkescientific.com/writings/diary/archive/2016/08/15/fragment_parity_calculation.html'''
+    Thanks to http://www.dalkescientific.com/writings/diary/archive/2016/08/15/fragment_parity_calculation.html
+    '''
     if data[0] < data[1]:
         if data[2] < data[3]:
             if data[0] < data[2]:
