@@ -1,12 +1,10 @@
 from __future__ import print_function
 import sys 
 import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import rdkit.Chem as Chem
 import rdkit.Chem.AllChem as AllChem
 from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
-import re
 
 from rdchiral.utils import vprint
 from rdchiral.initialization import rdchiralReaction, rdchiralReactants
@@ -28,8 +26,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
     note: there is a fair amount of initialization (assigning stereochem), most
     importantly assigning isotope numbers to the reactant atoms. It is 
-    HIGHLY recommended to use the intiialization functions in this file to load
-    from text, rather than load mols or reactions into RDKit yourself
+    HIGHLY recommended to use the custom classes for initialization.
     '''
 
     final_outcomes = set()
@@ -91,11 +88,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         vprint(2, 'Chirality matches! Just checked with atom_chirality_matches')
 
         # Check bond chirality
-        # - add implicit cis to "reactant" bonds in rings swith double bond
-        for (i, j, b) in reactants.bonds_by_isotope:
-            if b.IsInRing() and b.GetBondType() == BondType.DOUBLE:
-                pass
-        #TODO: add bond chirality considerations?
+        #TODO: add bond chirality considerations to exclude improper matches
 
         ###############################################################################
 
@@ -119,16 +112,23 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                     if a.GetIsotope() not in merged_iso_to_id:
                         merged_iso_to_id[a.GetIsotope()] = merged_mol.AddAtom(a)
                 for b in new_mol.GetBonds():
-                    try:
-                        merged_mol.AddBond(
-                            merged_iso_to_id[b.GetBeginAtom().GetIsotope()],
-                            merged_iso_to_id[b.GetEndAtom().GetIsotope()],
-                            b.GetBondType(),
-                        )
-                    except RuntimeError: # bond already exists, will throw error
-                        pass 
+                    bi = b.GetBeginAtom().GetIsotope()
+                    bj = b.GetEndAtom().GetIsotope()
+                    vprint(10, 'stitching bond between {} and {} in stich has chirality {}, {}'.format(
+                        bi, bj, b.GetStereo(), b.GetBondDir()
+                    ))
+                    if not merged_mol.GetBondBetweenAtoms(
+                            merged_iso_to_id[bi], merged_iso_to_id[bj]):
+                        merged_mol.AddBond(merged_iso_to_id[bi],
+                            merged_iso_to_id[bj], b.GetBondType())
+                        merged_mol.GetBondBetweenAtoms(
+                            merged_iso_to_id[bi], merged_iso_to_id[bj]
+                        ).SetStereo(b.GetStereo())
+                        merged_mol.GetBondBetweenAtoms(
+                            merged_iso_to_id[bi], merged_iso_to_id[bj]
+                        ).SetBondDir(b.GetBondDir())
             outcome = merged_mol.GetMol()
-            vprint(1, 'Merged editable mol, converted back to real mol')
+            vprint(1, 'Merged editable mol, converted back to real mol, {}', Chem.MolToSmiles(outcome, True))
         else:
             new_outcome = outcome[0]
             for j in range(1, len(outcome)):
@@ -196,7 +196,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
 
         ###############################################################################
-        # Correct chirality in the outcome
+        # Correct tetra chirality in the outcome
 
         for a in outcome.GetAtoms():
             # Participants in reaction core (from reactants) will have old_mapno
@@ -275,6 +275,10 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         ###############################################################################
 
 
+        ###############################################################################
+        # Correct bond directionality in the outcome
+        # TODO
+
 
         # Clear isotope
         if not keep_isotopes:
@@ -297,5 +301,5 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 if __name__ == '__main__':
     reaction_smarts = '[C:1][OH:2]>>[C:1][O:2][C]'
     reactant_smiles = 'CC(=O)OCCCO'
-    outcomes = run_from_text(reaction_smarts, reactant_smiles)
+    outcomes = rdchiralRunText(reaction_smarts, reactant_smiles)
     print(outcomes)
