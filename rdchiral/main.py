@@ -13,7 +13,7 @@ from rdchiral.initialization import rdchiralReaction, rdchiralReactants
 from rdchiral.chiral import template_atom_could_have_been_tetra, copy_chirality, atom_chirality_matches
 from rdchiral.clean import canonicalize_outcome_smiles, combine_enantiomers_into_racemic
 
-def rdchiralRun_from_text(reaction_smarts, reactant_smiles, **kwargs):
+def rdchiralRunText(reaction_smarts, reactant_smiles, **kwargs):
     '''Run from SMARTS string and SMILES string. This is NOT recommended
     for library application, since initialization is pretty slow. You should
     separately initialize the template and molecules and call run()'''
@@ -184,6 +184,15 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
             vprint(3, 'No missing bonds')
         ###############################################################################
 
+
+        # Now that we've fixed any bonds, connectivity is set. This is a good time
+        # to udpate the property cache, since all that is left is fixing atom/bond
+        # stereochemistry.
+        try:
+            outcome.UpdatePropertyCache()
+        except ValueError as e: 
+            vprint(1, '{}, {}'.format(Chem.MolToSmiles(outcome, True), e))
+            continue
 
 
         ###############################################################################
