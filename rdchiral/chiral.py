@@ -3,7 +3,7 @@ from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
 
 from rdchiral.utils import vprint, parity4
 
-def template_atom_could_have_been_tetra(a):
+def template_atom_could_have_been_tetra(a, strip_if_spec=False):
     '''
     Could this atom have been a tetrahedral center?
     If yes, template atom is considered achiral and will not match a chiral rct
@@ -15,9 +15,8 @@ def template_atom_could_have_been_tetra(a):
         return a.GetBoolProp('tetra_possible')
     if a.GetDegree() < 3 or (a.GetDegree() == 3 and 'H' not in a.GetSmarts()):
         a.SetBoolProp('tetra_possible', False)
-        # Clear chiral tag in case improperly set (e.g., defined for an
-        # incomplete template
-        a.SetChiralTag(ChiralType.CHI_UNSPECIFIED)
+        if strip_if_spec: # Clear chiral tag in case improperly set
+            a.SetChiralTag(ChiralType.CHI_UNSPECIFIED)
         return False 
     a.SetBoolProp('tetra_possible', True)
     return True 
@@ -74,9 +73,15 @@ def atom_chirality_matches(a_tmp, a_mol):
 
     isotopes_tmp = [a.GetIsotope() for a in a_tmp.GetNeighbors()]
     isotopes_mol = [a.GetIsotope() for a in a_mol.GetNeighbors()]
-    while len(isotopes_tmp) < 4:
+
+    # When there are fewer than 3 heavy neighbors, chirality is ambiguous...
+    if len(isotopes_tmp) < 3 or len(isotopes_mol) < 3:
+        return True
+
+    # Degree of 3 -> remaining atom is a hydrogen, add to list
+    if len(isotopes_tmp) < 4:
         isotopes_tmp.append(-1) # H
-    while len(isotopes_mol) < 4:
+    if len(isotopes_mol) < 4:
         isotopes_mol.append(-1) # H
 
     try:
@@ -106,7 +111,7 @@ def atom_chirality_matches(a_tmp, a_mol):
         print(a_mol.GetPropsAsDict())
         print(a_tmp.GetChiralTag())
         print(a_mol.GetChiralTag())
-        vprint(1, str(e))
-        vprint(1, str(isotopes_tmp))
-        vprint(1, str(isotopes_mol))
+        print(str(e))
+        print(str(isotopes_tmp))
+        print(str(isotopes_mol))
         raise KeyError('Pop from empty set - this should not happen!')
