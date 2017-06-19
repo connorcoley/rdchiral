@@ -64,7 +64,7 @@ def initialize_rxn_from_smarts(reaction_smarts):
     rxn = AllChem.ReactionFromSmarts(reaction_smarts)
     rxn.Initialize()
     if rxn.Validate()[1] != 0:
-        raise ValueError('Could not validate reaction')
+        raise ValueError('validation failed')
     vprint(2, 'Validated rxn without errors')
 
     unmapped = 700
