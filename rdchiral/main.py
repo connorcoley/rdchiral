@@ -8,8 +8,33 @@ from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
 
 from rdchiral.utils import vprint
 from rdchiral.initialization import rdchiralReaction, rdchiralReactants
-from rdchiral.chiral import template_atom_could_have_been_tetra, copy_chirality, atom_chirality_matches
+from rdchiral.chiral import template_atom_could_have_been_tetra, copy_chirality,\
+    atom_chirality_matches
 from rdchiral.clean import canonicalize_outcome_smiles, combine_enantiomers_into_racemic
+from rdchiral.bonds import BondDirOpposite, restore_bond_stereo_to_sp2_atom
+
+'''
+This file contains the main functions for running reactions. 
+
+An incomplete description of expected behavior is as follows:
+
+(1) RDKit's native RunReactants is called on an achiral version of the molecule,
+which has had all tetrahedral centers and bond directions stripped.
+
+(2) For each outcome, we examine the correspondence between atoms in the
+reactants and atoms in the reactant template for reasons to exclude the 
+current outcome. The following conditions are checked:
+    (a) If a reactant atom is a tetrahedral center with specified chirality
+        and the reactant template atom 
+
+(3) For each outcome, merge all products into a single molecule. During this
+process, we check for bonds that are missing in the product. These are those
+that were present in the reactants but were NOT matched in the reactant
+template.
+
+#TODO
+
+'''
 
 def rdchiralRunText(reaction_smarts, reactant_smiles, **kwargs):
     '''Run from SMARTS string and SMILES string. This is NOT recommended
@@ -87,8 +112,27 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
             continue
         vprint(2, 'Chirality matches! Just checked with atom_chirality_matches')
 
-        # Check bond chirality
-        #TODO: add bond chirality considerations to exclude improper matches
+        # Check bond chirality - iterate through reactant double bonds where
+        # chirality is specified (or not). atoms defined by isotope
+        skip_outcome = False
+        for atoms, dirs in reactants.atoms_across_double_bonds:
+            if all(i in atoms_rt for i in atoms):
+                # All atoms definining chirality were matched to the reactant template
+                # So, check if it is consistent with how the template is defined
+                #...but /=/ should match \=\ since they are both trans...
+                matched_atom_map_nums = tuple(atoms_rt[i].GetIntProp('molAtomMapNumber') for i in atoms)
+                dirs_template = rxn.required_rt_bond_defs[matched_atom_map_nums]
+                if dirs != dirs_template and \
+                        (BondDirOpposite[dirs[0]], BondDirOpposite[dirs[1]]) != dirs_template:
+                    vprint(-1, 'Reactant bond chirality does not match template!')
+                    vprint(-1, 'Based on map numbers...')
+                    vprint(-1, '  rct: {} -> {}'.format(matched_atom_map_nums, dirs))
+                    vprint(-1, '  tmp: {} -> {}'.format(matched_atom_map_nums, dirs_template))
+                    vprint(-1, 'skipping this outcome, should not have matched...')
+                    skip_outcome = True 
+                    break
+        if skip_outcome:
+            continue
 
         ###############################################################################
 
@@ -277,7 +321,60 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
         ###############################################################################
         # Correct bond directionality in the outcome
-        # TODO
+        for b in outcome.GetBonds():
+            if b.GetBondType() != BondType.DOUBLE:
+                continue
+            
+            ba = b.GetBeginAtom()
+            bb = b.GetEndAtom()
+
+            # Is it possible at all to specify this bond?
+            if ba.GetDegree() == 1 or bb.GetDegree() == 1:
+                continue
+
+            vprint(5, 'Looking at outcome bond {}={}'.format(ba.GetIsotope(), bb.GetIsotope()))
+
+            if ba.HasProp('old_mapno') and bb.HasProp('old_mapno'):
+                # Need to rely on templates for bond chirality, both atoms were
+                # in the reactant template 
+                vprint(5, 'Both atoms in this double bond were in the reactant template')
+                if (ba.GetIntProp('old_mapno'), bb.GetIntProp('old_mapno')) in \
+                        rxn.required_bond_defs_coreatoms:   
+                    vprint(5, 'and reactant template *could* have specified the chirality!')
+                    vprint(5, '..product should be property instantiated')
+                    continue
+                vprint(5, 'But it was impossible to have specified chirality (e.g., aux C=C for context)')
+
+            elif not ba.HasProp('react_atom_idx') and not bb.HasProp('react_atom_idx'):
+                # The atoms were both created by the product template, so any bond
+                # stereochemistry should have been instantiated by the product template
+                # already...hopefully...otherwise it isn't specific enough?
+                continue 
+
+            # Need to copy from reactants, this double bond was simply carried over,
+            # *although* one of the atoms could have reacted and been an auxilliary
+            # atom in the reaction, e.g., C/C=C(/CO)>>C/C=C(/C[Br])
+            vprint(5, 'Restoring cis/trans character of bond {}={} from reactants'.format(
+                ba.GetIsotope(), bb.GetIsotope()))
+            
+            # Start with setting the BeginAtom
+            begin_atom_specified = restore_bond_stereo_to_sp2_atom(ba, reactants.bond_dirs_by_isotope)
+            
+            if not begin_atom_specified:
+                # don't bother setting other side of bond, since we won't be able to
+                # fully specify this bond as cis/trans
+                continue 
+            
+            # Look at other side of the bond now, the EndAtom
+            end_atom_specified = restore_bond_stereo_to_sp2_atom(bb, reactants.bond_dirs_by_isotope)
+            if not end_atom_specified:
+                print(reactants.bond_dirs_by_isotope)
+                print(ba.GetIsotope())
+                print(bb.GetIsotope())
+                print(Chem.MolToSmiles(outcome, True))
+                raise ValueError('Uh oh, looks like bond direction is only specified for half of this bond?')
+
+        ###############################################################################
 
 
         # Clear isotope

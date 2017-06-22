@@ -1,9 +1,14 @@
 import rdkit.Chem as Chem
 import rdkit.Chem.AllChem as AllChem
-from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
+from rdkit.Chem.rdchem import ChiralType, BondType, BondDir, BondStereo
 
 from rdchiral.chiral import template_atom_could_have_been_tetra
 from rdchiral.utils import vprint
+from rdchiral.bonds import enumerate_possible_cistrans_defs, bond_dirs_by_mapnum, \
+    get_atoms_across_double_bonds
+
+BondDirOpposite = {AllChem.BondDir.ENDUPRIGHT: AllChem.BondDir.ENDDOWNRIGHT,
+                   AllChem.BondDir.ENDDOWNRIGHT: AllChem.BondDir.ENDUPRIGHT}
 
 class rdchiralReaction():
     '''
@@ -31,6 +36,14 @@ class rdchiralReaction():
         [template_atom_could_have_been_tetra(a) for a in self.template_r.GetAtoms()]
         [template_atom_could_have_been_tetra(a) for a in self.template_p.GetAtoms()]
 
+        # Pre-list chiral double bonds (for copying back into outcomes/matching)
+        self.rt_bond_dirs_by_mapnum = bond_dirs_by_mapnum(self.template_r)
+        self.pt_bond_dirs_by_mapnum = bond_dirs_by_mapnum(self.template_p)
+
+        # Enumerate possible cis/trans...
+        self.required_rt_bond_defs, self.required_bond_defs_coreatoms = \
+            enumerate_possible_cistrans_defs(self.template_r)
+
 class rdchiralReactants():
     '''
     Class to store everything that should be pre-computed for a reactant mol
@@ -51,13 +64,25 @@ class rdchiralReactants():
         # RDKit's naive runReactants
         self.reactants_achiral = initialize_reactants_from_smiles(reactant_smiles)
         [a.SetChiralTag(ChiralType.CHI_UNSPECIFIED) for a in self.reactants_achiral.GetAtoms()]
-        # TODO: strip bond chirality? 
+        [(b.SetStereo(BondStereo.STEREONONE), b.SetBondDir(BondDir.NONE)) \
+            for b in self.reactants_achiral.GetBonds()]
 
         # Pre-list reactant bonds (for stitching broken products)
         self.bonds_by_isotope = [
             (b.GetBeginAtom().GetIsotope(), b.GetEndAtom().GetIsotope(), b) \
             for b in self.reactants.GetBonds()
         ]
+
+        # Pre-list chiral double bonds (for copying back into outcomes/matching)
+        self.bond_dirs_by_isotope = {}
+        for (i, j, b) in self.bonds_by_isotope:
+            if b.GetBondDir() != BondDir.NONE:
+                self.bond_dirs_by_isotope[(i, j)] = b.GetBondDir()
+                self.bond_dirs_by_isotope[(j, i)] = BondDirOpposite[b.GetBondDir()]
+
+        # Get atoms across double bonds defined by isotope
+        self.atoms_across_double_bonds = get_atoms_across_double_bonds(self.reactants)
+
 
 def initialize_rxn_from_smarts(reaction_smarts):
     # Initialize reaction

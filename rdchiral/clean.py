@@ -30,11 +30,13 @@ def combine_enantiomers_into_racemic(final_outcomes):
     '''
 
     for smiles in list(final_outcomes)[:]:
+
         # Look for @@ tetrahedral center
         for match in re.finditer(r'@@', smiles):
             smiles_inv = '%s@%s' % (smiles[:match.start()], smiles[match.end():])
             if smiles_inv in final_outcomes:
-                final_outcomes.remove(smiles)
+                if smiles in final_outcomes:
+                    final_outcomes.remove(smiles)
                 final_outcomes.remove(smiles_inv)
                 # Re-parse smiles so that hydrogens can become implicit
                 smiles = smiles[:match.start()] + smiles[match.end():]
