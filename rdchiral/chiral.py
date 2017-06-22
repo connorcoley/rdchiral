@@ -36,7 +36,7 @@ def copy_chirality(a_src, a_new):
         a_src.GetIsotope(), a_src.GetChiralTag())
     a_new.SetChiralTag(a_src.GetChiralTag())
     
-    if not atom_chirality_matches(a_src, a_new):
+    if atom_chirality_matches(a_src, a_new) == -1:
         vprint(3, 'For isotope {}, inverting chirality', a_new.GetIsotope())
         a_new.InvertChirality()
 
@@ -45,38 +45,43 @@ def atom_chirality_matches(a_tmp, a_mol):
     Checks for consistency in chirality between a template atom and a molecule atom.
 
     Also checks to see if chirality needs to be inverted in copy_chirality
+
+    Returns +1 if it is a match and there is no need for inversion (or ambiguous)
+    Returns -1 if it is a match but they are the opposite
+    Returns 0 if an explicit NOT match
+    Returns 2 if ambiguous or achiral-achiral
     '''
     if a_mol.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
         if a_tmp.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
             vprint(3, 'atom {} is achiral & achiral -> match', a_mol.GetIsotope())
-            return True # achiral template, achiral molecule -> match
+            return 2 # achiral template, achiral molecule -> match
         # What if the template was chiral, but the reactant isn't just due to symmetry?
         if not a_mol.HasProp('_ChiralityPossible'):
             # It's okay to make a match, as long as the product is achiral (even
             # though the product template will try to impose chirality)
             vprint(3, 'atom {} is specified in template, but cant possibly be chiral in mol', a_mol.GetIsotope())
-            return True
+            return 2
 
         # TODO: figure out if we want this behavior - should a chiral template
         # be applied to an achiral molecule? For the retro case, if we have
         # a retro reaction that requires a specific stereochem, return False;
         # however, there will be many cases where the reaction would probably work
         vprint(3, 'atom {} is achiral in mol, but specified in template', a_mol.GetIsotope())
-        return False
+        return 0
     if a_tmp.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
         vprint(3, 'Reactant {} atom chiral, rtemplate achiral...', a_tmp.GetIsotope())
         if template_atom_could_have_been_tetra(a_tmp):
             vprint(3, '...and that atom could have had its chirality specified! no_match')
-            return False
+            return 0
         vprint(3, '...but the rtemplate atom could not have had chirality specified, match anyway')
-        return True
+        return 2
 
     isotopes_tmp = [a.GetIsotope() for a in a_tmp.GetNeighbors()]
     isotopes_mol = [a.GetIsotope() for a in a_mol.GetNeighbors()]
 
     # When there are fewer than 3 heavy neighbors, chirality is ambiguous...
     if len(isotopes_tmp) < 3 or len(isotopes_mol) < 3:
-        return True
+        return 2
 
     # Degree of 3 -> remaining atom is a hydrogen, add to list
     if len(isotopes_tmp) < 4:
@@ -100,10 +105,10 @@ def atom_chirality_matches(a_tmp, a_mol):
             tag_matches = a_tmp.GetChiralTag() == a_mol.GetChiralTag()
             chirality_matches = parity_matches == tag_matches
             vprint(2, 'Isotope {} chiral match? {}', a_tmp.GetIsotope(), chirality_matches)
-            return chirality_matches
+            return 1 if chirality_matches else -1
         else:
             vprint(2, 'Isotope {} chiral match? Based on isotope lists, ambiguous -> True', a_tmp.GetIsotope())
-            return True # ambiguous case, just return for now
+            return 2 # ambiguous case, just return for now
             # TODO: fix this?
 
     except IndexError as e:

@@ -24,15 +24,43 @@ which has had all tetrahedral centers and bond directions stripped.
 (2) For each outcome, we examine the correspondence between atoms in the
 reactants and atoms in the reactant template for reasons to exclude the 
 current outcome. The following conditions are checked:
+
+    TETRAHEDRAL ATOMS
     (a) If a reactant atom is a tetrahedral center with specified chirality
-        and the reactant template atom 
+        and the reactant template atom is NOT chiral but is defined in a way
+        that it could have been specified, reject this outcome
+    (b) If a reactant atom is a tetrahedral center with specified chirality
+        and the reactant template atom is NOT chiral and is not defined in
+        a way where it could have been (i.e., is generalized without spec.
+        neighbors), then keep the match.
+    (c) If a reactant atom is achiral but the reactant tempalte atom is chiral,
+        the match is still allowed to happen. We might want to change this later
+        or let it be an option.
+    (d) If a reactant atom is a tetrahedral center with specified chirality
+        and the reactant template also has its chirality specified, let the
+        match happen if the chirality matches.
+        #TODO: add flexibility to this so that opposite matches are allowed,
+        but propagated through
+
+    DOUBLE BONDS
+    (a) If a reactant double bond is defined with directionality specified and
+        the reactant template is unspecified but COULD have been (i.e., 
+        neighbors of sp2 carbons are specified), reject this outcome
+    (b) If a reactant double bond is defined with directionality specified and
+        the reactant template si unspecified but could NOT have been (in the
+        case of generalization), allow the match to occur. This is what we
+        default to when half the bond is specified, like in "C=C/O"
+    note: reactants are checked for implicit bond stereo based on rings
+
 
 (3) For each outcome, merge all products into a single molecule. During this
 process, we check for bonds that are missing in the product. These are those
 that were present in the reactants but were NOT matched in the reactant
 template.
 
-#TODO
+(4) For each outcome, examine product atoms to correct tetrahedral chirality.
+
+(5) For each outcome, examine product double bonds to correct cis/trans-ness
 
 '''
 
@@ -107,9 +135,26 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         [a.SetIsotope(i) for (i, a) in atoms_rt.iteritems()]
 
         # Make sure each atom matches
-        if not all(atom_chirality_matches(atoms_rt[i], atoms_r[i]) for i in atoms_rt):
-            vprint(2, 'Chirality violated! Should not have gotten this match')
-            continue
+        # note: this is a little weird because atom_chirality_matches takes three values,
+        #       -1 (both tetra but opposite), 0 (not a match), and +1 (both tetra and match)
+        #       and we only want to continue if they all equal -1 or all equal +1
+        prev = None
+        skip_outcome = False
+        for match in (atom_chirality_matches(atoms_rt[i], atoms_r[i]) for i in atoms_rt):
+            if match == 0: 
+                vprint(2, 'Chirality violated! Should not have gotten this match')
+                skip_outcome = True 
+                break
+            elif match == 2: # ambiguous case
+                continue
+            elif prev is None:
+                prev = match
+            elif match != prev:
+                vprint(2, 'Part of the template matched reactant chirality, part is inverted! Should not match')
+                skip_outcome = True 
+                break
+        if skip_outcome:
+            continue      
         vprint(2, 'Chirality matches! Just checked with atom_chirality_matches')
 
         # Check bond chirality - iterate through reactant double bonds where
@@ -288,7 +333,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                                 # Yes, so we need to check if chirality should be preserved or inverted
                                 vprint(3, '...and reactant template was, too! copy from reactants')
                                 copy_chirality(atoms_r[a.GetIsotope()], a)
-                                if not atom_chirality_matches(atoms_pt[a.GetIsotope()], atoms_rt[a.GetIsotope()]):
+                                if atom_chirality_matches(atoms_pt[a.GetIsotope()], atoms_rt[a.GetIsotope()]) == -1:
                                     vprint(3, 'but! reactant template and product template have opposite stereochem, so invert')
                                     a.InvertChirality()
                     
