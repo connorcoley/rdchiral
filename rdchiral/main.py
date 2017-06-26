@@ -82,8 +82,22 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
     HIGHLY recommended to use the custom classes for initialization.
     '''
 
-    final_outcomes = set()
+    
 
+    ###############################################################################
+    # Run naive RDKit on ACHIRAL version of molecules
+    outcomes = rxn.rxn.RunReactants((reactants.reactants_achiral,))
+    if PLEVEL >= (1): print('Using naive RunReactants, {} outcomes'.format(len(outcomes)))
+    if not outcomes:
+        return []
+
+    ###############################################################################
+    
+
+    ###############################################################################
+    # Initialize, now that there is at least one outcome
+    
+    final_outcomes = set()
     # We need to keep track of what map numbers 
     # (i.e., isotopes) correspond to which atoms
     # note: all reactant atoms must be mapped, so this is safe
@@ -95,16 +109,8 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
     # Get molAtomMapNum->atom dictionary for tempalte reactants and products
     atoms_rt_map = rxn.atoms_rt_map
     atoms_pt_map = rxn.atoms_pt_map
-
     ###############################################################################
-    # Run naive RDKit on ACHIRAL version of molecules
 
-    outcomes = rxn.rxn.RunReactants((reactants.reactants_achiral,))
-    if PLEVEL >= (1): print('Using naive RunReactants, {} outcomes'.format(len(outcomes)))
-    if not outcomes:
-        return []
-
-    ###############################################################################
 
     for outcome in outcomes:
         ###############################################################################
