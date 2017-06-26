@@ -3,7 +3,7 @@ import rdkit.Chem.AllChem as AllChem
 from rdkit.Chem.rdchem import ChiralType, BondType, BondDir, BondStereo
 
 from rdchiral.chiral import template_atom_could_have_been_tetra
-from rdchiral.utils import vprint
+from rdchiral.utils import vprint, PLEVEL
 from rdchiral.bonds import enumerate_possible_cistrans_defs, bond_dirs_by_mapnum, \
     get_atoms_across_double_bonds
 
@@ -31,6 +31,11 @@ class rdchiralReaction():
             for a in self.template_r.GetAtoms() if a.HasProp('molAtomMapNumber')}
         self.atoms_pt_map = {a.GetIntProp('molAtomMapNumber'): a \
             for a in self.template_p.GetAtoms() if a.HasProp('molAtomMapNumber')}
+
+        # Check consistency (this should not be necessary...)
+        if any(self.atoms_rt_map[i].GetAtomicNum() != self.atoms_pt_map[i].GetAtomicNum() \
+                for i in self.atoms_rt_map if i in self.atoms_pt_map):
+            raise ValueError('Atomic identity should not change in a reaction!')
 
         # Call template_atom_could_have_been_tetra to pre-assign value to atom
         [template_atom_could_have_been_tetra(a) for a in self.template_r.GetAtoms()]
@@ -90,7 +95,7 @@ def initialize_rxn_from_smarts(reaction_smarts):
     rxn.Initialize()
     if rxn.Validate()[1] != 0:
         raise ValueError('validation failed')
-    vprint(2, 'Validated rxn without errors')
+    if PLEVEL >= 2: print('Validated rxn without errors')
 
     unmapped = 700
     for rct in rxn.GetReactants():
@@ -101,7 +106,7 @@ def initialize_rxn_from_smarts(reaction_smarts):
             if not a.HasProp('molAtomMapNumber'):
                 a.SetIntProp('molAtomMapNumber', unmapped)
                 unmapped += 1
-    vprint(2, 'Added {} map nums to unmapped reactants', unmapped-700)
+    if PLEVEL >= 2: print('Added {} map nums to unmapped reactants'.format(unmapped-700))
     if unmapped > 800:
         raise ValueError('Why do you have so many unmapped atoms in the template reactants?')
 
@@ -116,7 +121,7 @@ def initialize_reactants_from_smiles(reactant_smiles):
     # need to populate the Isotope field, since this field
     # gets copied over during the reaction.
     [a.SetIsotope(i+1) for (i, a) in enumerate(reactants.GetAtoms())]
-    vprint(2, 'Initialized reactants, assigned isotopes, stereochem, flagpossiblestereocenters')
+    if PLEVEL >= 2: print('Initialized reactants, assigned isotopes, stereochem, flagpossiblestereocenters')
     return reactants
 
 def get_template_frags_from_rxn(rxn):

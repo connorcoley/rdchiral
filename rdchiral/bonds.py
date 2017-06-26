@@ -1,7 +1,7 @@
 import rdkit.Chem as Chem
 import rdkit.Chem.AllChem as AllChem
 from rdkit.Chem.rdchem import ChiralType, BondType, BondDir, BondStereo
-from rdchiral.utils import vprint
+from rdchiral.utils import vprint, PLEVEL
 
 BondDirOpposite = {AllChem.BondDir.ENDUPRIGHT: AllChem.BondDir.ENDDOWNRIGHT,
                    AllChem.BondDir.ENDDOWNRIGHT: AllChem.BondDir.ENDUPRIGHT,
@@ -69,7 +69,7 @@ def enumerate_possible_cistrans_defs(template_r, \
     required_bond_defs = {}
     required_bond_defs_coreatoms = set()
 
-    vprint(10, 'Looking at initializing template frag')
+    if PLEVEL >= 10: print('Looking at initializing template frag')
     for b in template_r.GetBonds():
         if b.GetBondType() != BondType.DOUBLE:
             continue
@@ -85,8 +85,8 @@ def enumerate_possible_cistrans_defs(template_r, \
         ba_label = labeling_func(ba)
         bb_label = labeling_func(bb)
             
-        vprint(10, 'Found a double bond with potential cis/trans (based on degree)')
-        vprint(10, '{} {} {}'.format(ba_label,
+        if PLEVEL >= 10: print('Found a double bond with potential cis/trans (based on degree)')
+        if PLEVEL >= 10: print('{} {} {}'.format(ba_label,
                                b.GetSmarts(),
                                bb_label))
 
@@ -127,9 +127,9 @@ def enumerate_possible_cistrans_defs(template_r, \
                 front_spec = bab.GetBondDir()
                 break
         if front_spec is None:
-            vprint(10, 'Chirality not specified at front end of the bond!')
+            if PLEVEL >= 10: print('Chirality not specified at front end of the bond!')
         else:
-            vprint(10, 'Front specification: {}'.format(front_spec))
+            if PLEVEL >= 10: print('Front specification: {}'.format(front_spec))
             
             for bbb in bb.GetBonds():
                 if bbb.GetBondDir() != BondDir.NONE:
@@ -149,9 +149,9 @@ def enumerate_possible_cistrans_defs(template_r, \
                     back_spec = bbb.GetBondDir()
                     break
         if back_spec is None:
-            vprint(10, 'Chirality not specified at back end of the bond!')
+            if PLEVEL >= 10: print('Chirality not specified at back end of the bond!')
         else:
-            vprint(10, 'Back specification: {}'.format(back_spec))
+            if PLEVEL >= 10: print('Back specification: {}'.format(back_spec))
 
         # Is this an overall unspecified bond? Put it in the dictionary anyway, 
         # so there is something to match
@@ -170,10 +170,10 @@ def enumerate_possible_cistrans_defs(template_r, \
             continue
         
         if front_spec == back_spec:
-            vprint(10, '-> locally TRANS')
+            if PLEVEL >= 10: print('-> locally TRANS')
             b.SetProp('localChirality', 'trans')
         else:
-            vprint(10, '--> locally CIS')
+            if PLEVEL >= 10: print('--> locally CIS')
             b.SetProp('localChirality', 'cis')
 
         possible_defs = {}
@@ -207,8 +207,8 @@ def enumerate_possible_cistrans_defs(template_r, \
         # Save to the definition of this bond (in either direction)
         required_bond_defs.update(possible_defs)
         
-    vprint(10, 'All bond specs for this template:' )
-    vprint(10, str([(k, v) for (k, v) in required_bond_defs.iteritems()]))
+    if PLEVEL >= 10: print('All bond specs for this template:' )
+    if PLEVEL >= 10: print(str([(k, v) for (k, v) in required_bond_defs.iteritems()]))
     return required_bond_defs, required_bond_defs_coreatoms
 
 def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
@@ -252,8 +252,8 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
         ba_label = labeling_func(ba)
         bb_label = labeling_func(bb)
             
-        vprint(5, 'Found a double bond with potential cis/trans (based on degree)')
-        vprint(5, '{} {} {}'.format(ba_label,
+        if PLEVEL >= 5: print('Found a double bond with potential cis/trans (based on degree)')
+        if PLEVEL >= 5: print('{} {} {}'.format(ba_label,
                                b.GetSmarts(),
                                bb_label))
         
@@ -287,11 +287,11 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
                         if (bab.GetOtherAtomIdx(ba.GetIdx()) in atomring) != \
                                 (bbb.GetOtherAtomIdx(bb.GetIdx()) in atomring):
                             # one of these atoms are in the ring, one is outside -> trans
-                            vprint(10, 'Implicit trans found')
+                            if PLEVEL >= 10: print('Implicit trans found')
                             front_dir = BondDir.ENDUPRIGHT
                             back_dir = BondDir.ENDUPRIGHT
                         else:
-                            vprint(10, 'Implicit cis found')
+                            if PLEVEL >= 10: print('Implicit cis found')
                             front_dir = BondDir.ENDUPRIGHT 
                             back_dir = BondDir.ENDDOWNRIGHT
                         break
@@ -342,14 +342,14 @@ def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_isotope):
                      bond_to_spec.GetEndAtom().GetIsotope())
                 ]
             )
-            vprint(2, 'Tried to copy bond direction b/w {} and {}'.format(
+            if PLEVEL >= 2: print('Tried to copy bond direction b/w {} and {}'.format(
                 bond_to_spec.GetBeginAtom().GetIsotope(),
                 bond_to_spec.GetEndAtom().GetIsotope()
             ))
             return True
     
     # Weird case, like C=C/O >> C=C/Br
-    vprint(2, 'Bond stereo could not be restored to sp2 atom, missing the branch that was used to define before...')
+    if PLEVEL >= 2: print('Bond stereo could not be restored to sp2 atom, missing the branch that was used to define before...')
     
     if a.GetDegree() == 2:
         # Either the branch used to define was replaced with H (deg 3 -> deg 2)
@@ -359,11 +359,11 @@ def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_isotope):
                 continue
             if not bond_to_spec.GetOtherAtom(a).HasProp('old_mapno'): 
                 # new atom, deg2->deg2, assume direction preserved
-                vprint(5, 'Only single-bond attachment to atom {} is new, try to reproduce chirality'.format(a.GetIsotope()))
+                if PLEVEL >= 5: print('Only single-bond attachment to atom {} is new, try to reproduce chirality'.format(a.GetIsotope()))
                 needs_inversion = False 
             else:
                 # old atom, just was not used in chirality definition - set opposite
-                vprint(5, 'Only single-bond attachment to atom {} is old, try to reproduce chirality'.format(a.GetIsotope()))
+                if PLEVEL >= 5: print('Only single-bond attachment to atom {} is old, try to reproduce chirality'.format(a.GetIsotope()))
                 needs_inversion = True
 
             for (i, j), bond_dir in bond_dirs_by_isotope.iteritems():

@@ -1,7 +1,7 @@
 from __future__ import print_function
 from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
 
-from rdchiral.utils import vprint, parity4
+from rdchiral.utils import vprint, parity4, PLEVEL
 
 def template_atom_could_have_been_tetra(a, strip_if_spec=False):
     '''
@@ -32,12 +32,12 @@ def copy_chirality(a_src, a_new):
             any(b.GetBondType() != BondType.SINGLE for b in a_new.GetBonds()):
         return
 
-    vprint(3, 'For isotope {}, copying src {} chirality tag to new',
-        a_src.GetIsotope(), a_src.GetChiralTag())
+    if PLEVEL >= 3: print('For isotope {}, copying src {} chirality tag to new'.format(
+        a_src.GetIsotope(), a_src.GetChiralTag()))
     a_new.SetChiralTag(a_src.GetChiralTag())
     
     if atom_chirality_matches(a_src, a_new) == -1:
-        vprint(3, 'For isotope {}, inverting chirality', a_new.GetIsotope())
+        if PLEVEL >= 3: print('For isotope {}, inverting chirality'.format(a_new.GetIsotope()))
         a_new.InvertChirality()
 
 def atom_chirality_matches(a_tmp, a_mol):
@@ -53,27 +53,27 @@ def atom_chirality_matches(a_tmp, a_mol):
     '''
     if a_mol.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
         if a_tmp.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
-            vprint(3, 'atom {} is achiral & achiral -> match', a_mol.GetIsotope())
+            if PLEVEL >= 3: print('atom {} is achiral & achiral -> match'.format(a_mol.GetIsotope()))
             return 2 # achiral template, achiral molecule -> match
         # What if the template was chiral, but the reactant isn't just due to symmetry?
         if not a_mol.HasProp('_ChiralityPossible'):
             # It's okay to make a match, as long as the product is achiral (even
             # though the product template will try to impose chirality)
-            vprint(3, 'atom {} is specified in template, but cant possibly be chiral in mol', a_mol.GetIsotope())
+            if PLEVEL >= 3: print('atom {} is specified in template, but cant possibly be chiral in mol'.format(a_mol.GetIsotope()))
             return 2
 
         # TODO: figure out if we want this behavior - should a chiral template
         # be applied to an achiral molecule? For the retro case, if we have
         # a retro reaction that requires a specific stereochem, return False;
         # however, there will be many cases where the reaction would probably work
-        vprint(3, 'atom {} is achiral in mol, but specified in template', a_mol.GetIsotope())
+        if PLEVEL >= 3: print('atom {} is achiral in mol, but specified in template'.format(a_mol.GetIsotope()))
         return 0
     if a_tmp.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
-        vprint(3, 'Reactant {} atom chiral, rtemplate achiral...', a_tmp.GetIsotope())
+        if PLEVEL >= 3: print('Reactant {} atom chiral, rtemplate achiral...'.format(a_tmp.GetIsotope()))
         if template_atom_could_have_been_tetra(a_tmp):
-            vprint(3, '...and that atom could have had its chirality specified! no_match')
+            if PLEVEL >= 3: print('...and that atom could have had its chirality specified! no_match')
             return 0
-        vprint(3, '...but the rtemplate atom could not have had chirality specified, match anyway')
+        if PLEVEL >= 3: print('...but the rtemplate atom could not have had chirality specified, match anyway')
         return 2
 
     isotopes_tmp = [a.GetIsotope() for a in a_tmp.GetNeighbors()]
@@ -90,24 +90,24 @@ def atom_chirality_matches(a_tmp, a_mol):
         isotopes_mol.append(-1) # H
 
     try:
-        vprint(10, str(isotopes_tmp))
-        vprint(10, str(isotopes_mol))
-        vprint(10, str(a_tmp.GetChiralTag()))
-        vprint(10, str(a_mol.GetChiralTag()))
+        if PLEVEL >= 10: print(str(isotopes_tmp))
+        if PLEVEL >= 10: print(str(isotopes_mol))
+        if PLEVEL >= 10: print(str(a_tmp.GetChiralTag()))
+        if PLEVEL >= 10: print(str(a_mol.GetChiralTag()))
         only_in_src = [i for i in isotopes_tmp if i not in isotopes_mol][::-1] # reverse for popping
         only_in_mol = [i for i in isotopes_mol if i not in isotopes_tmp]
         if len(only_in_src) <= 1 and len(only_in_mol) <= 1:
             tmp_parity = parity4(isotopes_tmp)
             mol_parity = parity4([i if i in isotopes_tmp else only_in_src.pop() for i in isotopes_mol])
-            vprint(10, str(tmp_parity))
-            vprint(10, str(mol_parity))
+            if PLEVEL >= 10: print(str(tmp_parity))
+            if PLEVEL >= 10: print(str(mol_parity))
             parity_matches = tmp_parity == mol_parity
             tag_matches = a_tmp.GetChiralTag() == a_mol.GetChiralTag()
             chirality_matches = parity_matches == tag_matches
-            vprint(2, 'Isotope {} chiral match? {}', a_tmp.GetIsotope(), chirality_matches)
+            if PLEVEL >= 2: print('Isotope {} chiral match? {}'.format(a_tmp.GetIsotope(), chirality_matches))
             return 1 if chirality_matches else -1
         else:
-            vprint(2, 'Isotope {} chiral match? Based on isotope lists, ambiguous -> True', a_tmp.GetIsotope())
+            if PLEVEL >= 2: print('Isotope {} chiral match? Based on isotope lists, ambiguous -> True'.format(a_tmp.GetIsotope()))
             return 2 # ambiguous case, just return for now
             # TODO: fix this?
 

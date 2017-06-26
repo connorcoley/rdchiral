@@ -3,20 +3,22 @@ import rdkit.Chem as Chem
 import re
 from itertools import chain
 
-from rdchiral.utils import vprint
+from rdchiral.utils import vprint, PLEVEL
 
 
-def canonicalize_outcome_smiles(outcome):
+def canonicalize_outcome_smiles(outcome, ensure=False):
     # Uniquify via SMILES string - a little sloppy
     # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
     # also, split by '.' and sort when outcome contains multiple molecules
     smiles = Chem.MolToSmiles(outcome, True)
-    outcome = Chem.MolFromSmiles(smiles)
-    if outcome is None:
-        vprint(1, '~~ could not parse self?')
-        vprint(1, 'Attempted SMILES: {}', smiles)
-        return None
-    return  '.'.join(sorted(Chem.MolToSmiles(outcome, True).split('.')))
+    if ensure: 
+        outcome = Chem.MolFromSmiles(smiles)
+        if outcome is None:
+            if PLEVEL >= 1: print('~~ could not parse self?')
+            if PLEVEL >= 1: print('Attempted SMILES: {}', smiles)
+            return None
+        smiles = Chem.MolToSmiles(outcome, True)
+    return  '.'.join(sorted(smiles.split('.')))
 
 def combine_enantiomers_into_racemic(final_outcomes):
     '''
