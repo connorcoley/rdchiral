@@ -159,14 +159,14 @@ def enumerate_possible_cistrans_defs(template_r, \
             # Create a definition over this bond so that reactant MUST be unspecified, too
             for start_atom in ba_neighbor_labels:
                 for end_atom in bb_neighbor_labels:
-                    required_bond_defs[(start_atom, ba_label, bb_label, end_atom)] = BondDir.NONE
-                    required_bond_defs[(ba_label, start_atom, bb_label, end_atom)] = BondDir.NONE
-                    required_bond_defs[(start_atom, ba_label, end_atom, bb_label)] = BondDir.NONE
-                    required_bond_defs[(ba_label, start_atom, end_atom, bb_label)] = BondDir.NONE
-                    required_bond_defs[(bb_label, end_atom, start_atom, ba_label)] = BondDir.NONE
-                    required_bond_defs[(end_atom, bb_label, start_atom, ba_label)] = BondDir.NONE
-                    required_bond_defs[(bb_label, end_atom, ba_label, start_atom)] = BondDir.NONE
-                    required_bond_defs[(end_atom, bb_label, ba_label, start_atom)] = BondDir.NONE
+                    required_bond_defs[(start_atom, ba_label, bb_label, end_atom)] = (BondDir.NONE, BondDir.NONE)
+                    required_bond_defs[(ba_label, start_atom, bb_label, end_atom)] = (BondDir.NONE, BondDir.NONE)
+                    required_bond_defs[(start_atom, ba_label, end_atom, bb_label)] = (BondDir.NONE, BondDir.NONE)
+                    required_bond_defs[(ba_label, start_atom, end_atom, bb_label)] = (BondDir.NONE, BondDir.NONE)
+                    required_bond_defs[(bb_label, end_atom, start_atom, ba_label)] = (BondDir.NONE, BondDir.NONE)
+                    required_bond_defs[(end_atom, bb_label, start_atom, ba_label)] = (BondDir.NONE, BondDir.NONE)
+                    required_bond_defs[(bb_label, end_atom, ba_label, start_atom)] = (BondDir.NONE, BondDir.NONE)
+                    required_bond_defs[(end_atom, bb_label, ba_label, start_atom)] = (BondDir.NONE, BondDir.NONE)
             continue
         
         if front_spec == back_spec:
