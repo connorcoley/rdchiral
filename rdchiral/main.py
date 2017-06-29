@@ -51,6 +51,9 @@ current outcome. The following conditions are checked:
         case of generalization), allow the match to occur. This is what we
         default to when half the bond is specified, like in "C=C/O"
     note: reactants are checked for implicit bond stereo based on rings
+    (c) If a reactant double bond has implicit cis due to ring membership, it is
+        still allowed to match an unspecified template double bond. Might lead
+        to some weird edge cases, but mostly makes sense.
 
 
 (3) For each outcome, merge all products into a single molecule. During this
@@ -96,7 +99,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
     ###############################################################################
     # Initialize, now that there is at least one outcome
-    
+
     final_outcomes = set()
     # We need to keep track of what map numbers 
     # (i.e., isotopes) correspond to which atoms
@@ -166,7 +169,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         # Check bond chirality - iterate through reactant double bonds where
         # chirality is specified (or not). atoms defined by isotope
         skip_outcome = False
-        for atoms, dirs in reactants.atoms_across_double_bonds:
+        for atoms, dirs, is_implicit in reactants.atoms_across_double_bonds:
             if all(i in atoms_rt for i in atoms):
                 # All atoms definining chirality were matched to the reactant template
                 # So, check if it is consistent with how the template is defined
@@ -176,7 +179,8 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                     continue # this can happen in ring openings, for example
                 dirs_template = rxn.required_rt_bond_defs[matched_atom_map_nums]
                 if dirs != dirs_template and \
-                        (BondDirOpposite[dirs[0]], BondDirOpposite[dirs[1]]) != dirs_template:
+                        (BondDirOpposite[dirs[0]], BondDirOpposite[dirs[1]]) != dirs_template and \
+                        not (dirs_template == (BondDir.NONE, BondDir.NONE) and is_implicit):
                     if PLEVEL >= 5: print('Reactant bond chirality does not match template!')
                     if PLEVEL >= 5: print('Based on map numbers...')
                     if PLEVEL >= 5: print('  rct: {} -> {}'.format(matched_atom_map_nums, dirs))
@@ -377,6 +381,10 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
         for b in outcome.GetBonds():
             if b.GetBondType() != BondType.DOUBLE:
                 continue
+
+            # Ring double bonds do not need to be touched(?)
+            if b.IsInRing():
+                continue
             
             ba = b.GetBeginAtom()
             bb = b.GetEndAtom()
@@ -424,6 +432,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                 print(reactants.bond_dirs_by_isotope)
                 print(ba.GetIsotope())
                 print(bb.GetIsotope())
+                print(Chem.MolToSmiles(reactants.reactants, True))
                 print(Chem.MolToSmiles(outcome, True))
                 raise ValueError('Uh oh, looks like bond direction is only specified for half of this bond?')
 

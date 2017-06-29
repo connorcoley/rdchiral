@@ -232,7 +232,8 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
     to get the old_mapno property from the corresponding product atom, which is
     an outcome-specific assignment
 
-    We also include implicit chirality here based on ring membership
+    We also include implicit chirality here based on ring membership, but keep
+    track of that separately
     '''
     atoms_across_double_bonds = []
     atomrings = None
@@ -262,6 +263,7 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
         front_dir = None 
         back_isotopes = None 
         back_dir = None
+        is_implicit = False 
         for bab in (z for z in ba.GetBonds() if z.GetBondType() != BondType.DOUBLE):
             if bab.GetBondDir() != BondDir.NONE:
                 front_isotopes = (labeling_func(bab.GetBeginAtom()), labeling_func(bab.GetEndAtom()))
@@ -294,6 +296,7 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
                             if PLEVEL >= 10: print('Implicit cis found')
                             front_dir = BondDir.ENDUPRIGHT 
                             back_dir = BondDir.ENDDOWNRIGHT
+                        is_implicit = True 
                         break
 
             else:
@@ -310,7 +313,8 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
         atoms_across_double_bonds.append(
             (
                 front_isotopes + back_isotopes,
-                (front_dir, back_dir)
+                (front_dir, back_dir),
+                is_implicit,
             )
         )
 
