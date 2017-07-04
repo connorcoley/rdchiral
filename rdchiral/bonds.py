@@ -264,6 +264,7 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
         back_isotopes = None 
         back_dir = None
         is_implicit = False 
+        bab = None; bbb = None;
         for bab in (z for z in ba.GetBonds() if z.GetBondType() != BondType.DOUBLE):
             if bab.GetBondDir() != BondDir.NONE:
                 front_isotopes = (labeling_func(bab.GetBeginAtom()), labeling_func(bab.GetEndAtom()))
@@ -275,8 +276,12 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
                 back_dir = bbb.GetBondDir()
                 break 
 
+        # If impossible to spec, just continue
+        if (bab is None or bbb is None):
+            continue
+
         # Did we actually get a specification out?
-        if front_dir is None or back_dir is None:
+        if (front_dir is None or back_dir is None):
 
             if b.IsInRing(): 
                 # Implicit cis! Now to figure out right definitions...
