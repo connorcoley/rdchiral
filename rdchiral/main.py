@@ -429,12 +429,14 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
             # Look at other side of the bond now, the EndAtom
             end_atom_specified = restore_bond_stereo_to_sp2_atom(bb, reactants.bond_dirs_by_isotope)
             if not end_atom_specified:
-                print(reactants.bond_dirs_by_isotope)
-                print(ba.GetIsotope())
-                print(bb.GetIsotope())
-                print(Chem.MolToSmiles(reactants.reactants, True))
-                print(Chem.MolToSmiles(outcome, True))
-                raise ValueError('Uh oh, looks like bond direction is only specified for half of this bond?')
+                # note: this can happen if C=C/C-N turns into C=C/C=N 
+                if PLEVEL >= 1:
+                    print(reactants.bond_dirs_by_isotope)
+                    print(ba.GetIsotope())
+                    print(bb.GetIsotope())
+                    print(Chem.MolToSmiles(reactants.reactants, True))
+                    print(Chem.MolToSmiles(outcome, True))
+                    print('Uh oh, looks like bond direction is only specified for half of this bond?')
 
         ###############################################################################
 
