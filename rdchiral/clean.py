@@ -6,7 +6,7 @@ from itertools import chain
 from rdchiral.utils import vprint, PLEVEL
 
 
-def canonicalize_outcome_smiles(outcome, ensure=False):
+def canonicalize_outcome_smiles(outcome, ensure=True):
     # Uniquify via SMILES string - a little sloppy
     # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
     # also, split by '.' and sort when outcome contains multiple molecules
