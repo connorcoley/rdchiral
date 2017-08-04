@@ -3,7 +3,7 @@ from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
 
 from rdchiral.utils import vprint, parity4, PLEVEL
 
-def template_atom_could_have_been_tetra(a, strip_if_spec=False):
+def template_atom_could_have_been_tetra(a, strip_if_spec=False, cache=True):
     '''
     Could this atom have been a tetrahedral center?
     If yes, template atom is considered achiral and will not match a chiral rct
@@ -14,11 +14,13 @@ def template_atom_could_have_been_tetra(a, strip_if_spec=False):
     if a.HasProp('tetra_possible'):
         return a.GetBoolProp('tetra_possible')
     if a.GetDegree() < 3 or (a.GetDegree() == 3 and 'H' not in a.GetSmarts()):
-        a.SetBoolProp('tetra_possible', False)
+        if cache:
+            a.SetBoolProp('tetra_possible', False)
         if strip_if_spec: # Clear chiral tag in case improperly set
             a.SetChiralTag(ChiralType.CHI_UNSPECIFIED)
         return False 
-    a.SetBoolProp('tetra_possible', True)
+    if cache:
+        a.SetBoolProp('tetra_possible', True)
     return True 
 
 

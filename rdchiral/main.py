@@ -1,6 +1,7 @@
 from __future__ import print_function
 import sys 
 import os
+import re
 
 import rdkit.Chem as Chem
 import rdkit.Chem.AllChem as AllChem
@@ -39,8 +40,7 @@ current outcome. The following conditions are checked:
     (d) If a reactant atom is a tetrahedral center with specified chirality
         and the reactant template also has its chirality specified, let the
         match happen if the chirality matches.
-        #TODO: add flexibility to this so that opposite matches are allowed,
-        but propagated through
+
 
     DOUBLE BONDS
     (a) If a reactant double bond is defined with directionality specified and
@@ -299,7 +299,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
         ###############################################################################
         # Correct tetra chirality in the outcome
-
+        tetra_copied_from_reactants = []
         for a in outcome.GetAtoms():
             # Participants in reaction core (from reactants) will have old_mapno
             # Spectators present in reactants will have react_atom_idx
@@ -315,6 +315,9 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                 else:
                     if PLEVEL >= 4: print('Atom {} outside of template, copy chirality from reactants'.format(a.GetIsotope()))
                     copy_chirality(atoms_r[a.GetIsotope()], a)
+                    if a.GetChiralTag() != ChiralType.CHI_UNSPECIFIED:
+                        tetra_copied_from_reactants.append(a)
+
             else:
                 # Part of reactants and reaction core
                 
@@ -365,6 +368,8 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                         if PLEVEL >= 3: print('Atom {} also could not have been chiral in product template', a.GetIsotope())
                         if PLEVEL >= 3: print('...so, copy chirality from reactant instead')
                         copy_chirality(atoms_r[a.GetIsotope()], a)
+                        if a.GetChiralTag() != ChiralType.CHI_UNSPECIFIED:
+                            tetra_copied_from_reactants.append(a)
                     
                     else:
                         if PLEVEL >= 3: print('Atom could/does have product template chirality!'.format(a.GetIsotope()))
@@ -372,6 +377,9 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
                         copy_chirality(atoms_pt[a.GetIsotope()], a)
                     
             if PLEVEL >= 3: print('New chiral tag {}'.format(a.GetChiralTag()))
+        if skip_outcome:
+            if PLEVEL >= 2: print('Skipping this outcome - chirality broken?')
+            continue
         if PLEVEL >= 2: print('After attempting to re-introduce chirality, outcome = {}'.format(Chem.MolToSmiles(outcome, True)))
         ###############################################################################
 
@@ -440,15 +448,34 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
         ###############################################################################
 
-
-        # Clear isotope
         if not keep_isotopes:
             [a.SetIsotope(0) for a in outcome.GetAtoms()]
+            
 
-        # Canonicalize
-        smiles = canonicalize_outcome_smiles(outcome)
-        if smiles is not None:
-            final_outcomes.add(smiles)
+        # Now, check to see if we have destroyed chirality by removing isotopes
+        # this occurs when chirality was not actually possible (e.g., due to
+        # symmetry) but we had assigned a tetrahedral center originating
+        # from the reactants.
+        #    ex: SMILES C(=O)1C[C@H](Cl)CCC1
+        #        SMARTS [C:1]-[C;H0;D3;+0:2](-[C:3])=[O;H0;D1;+0]>>[C:1]-[CH2;D2;+0:2]-[C:3]
+        skip_outcome = False
+        if len(tetra_copied_from_reactants) > 0:
+            Chem.AssignStereochemistry(outcome, cleanIt=True, force=True)
+            for a in tetra_copied_from_reactants:
+                if a.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
+                    if PLEVEL >= 2: print('Auxiliary reactant atom was chiral, now is broken -> skip outcome')
+                    skip_outcome = True 
+                    break 
+        if skip_outcome:
+            continue
+
+
+        smiles = Chem.MolToSmiles(outcome, True)
+        smiles_new = canonicalize_outcome_smiles(smiles)
+        if smiles_new is None:
+            continue
+
+        final_outcomes.add(smiles_new)
 
     ###############################################################################
     # One last fix for consolidating multiple stereospecified products...

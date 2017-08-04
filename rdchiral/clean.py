@@ -6,18 +6,19 @@ from itertools import chain
 from rdchiral.utils import vprint, PLEVEL
 
 
-def canonicalize_outcome_smiles(outcome, ensure=True):
+def canonicalize_outcome_smiles(smiles, ensure=True):
     # Uniquify via SMILES string - a little sloppy
     # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
     # also, split by '.' and sort when outcome contains multiple molecules
-    smiles = Chem.MolToSmiles(outcome, True)
-    if ensure: 
+    if ensure or not keep_isotopes: 
         outcome = Chem.MolFromSmiles(smiles)
         if outcome is None:
             if PLEVEL >= 1: print('~~ could not parse self?')
             if PLEVEL >= 1: print('Attempted SMILES: {}', smiles)
             return None
+
         smiles = Chem.MolToSmiles(outcome, True)
+
     return  '.'.join(sorted(smiles.split('.')))
 
 def combine_enantiomers_into_racemic(final_outcomes):
