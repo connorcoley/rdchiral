@@ -7,7 +7,7 @@ import rdkit.Chem as Chem
 import rdkit.Chem.AllChem as AllChem
 from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
 
-from rdchiral.utils import vprint, PLEVEL
+from rdchiral.utils import vprint, PLEVEL, atoms_are_different
 from rdchiral.initialization import rdchiralReaction, rdchiralReactants
 from rdchiral.chiral import template_atom_could_have_been_tetra, copy_chirality,\
     atom_chirality_matches
@@ -101,6 +101,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
     # Initialize, now that there is at least one outcome
 
     final_outcomes = set()
+    mapped_outcomes = {}
     # We need to keep track of what map numbers 
     # (i.e., isotopes) correspond to which atoms
     # note: all reactant atoms must be mapped, so this is safe
@@ -448,6 +449,12 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
         ###############################################################################
 
+        #Keep track of the reacting atoms for later use in grouping
+        atoms_diff = {x:atoms_are_different(atoms_r[x],atoms_p[x]) for x in atoms_rt}
+         #make tuple of changed atoms
+        atoms_changed = tuple([x for x in atoms_diff.keys() if atoms_diff[x] == True])
+        mapped_outcome = Chem.MolToSmiles(outcome, True)
+
         if not keep_isotopes:
             [a.SetIsotope(0) for a in outcome.GetAtoms()]
             
@@ -477,17 +484,20 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True):
 
         final_outcomes.add(smiles_new)
 
+        #dictionary to map the sanatized outcomes to the mapped smiles and changed atoms
+        mapped_outcomes[smiles_new] = (mapped_outcome, atoms_changed)
     ###############################################################################
     # One last fix for consolidating multiple stereospecified products...
     if combine_enantiomers:
         final_outcomes = combine_enantiomers_into_racemic(final_outcomes)
     ###############################################################################
 
-    return list(final_outcomes)
+    return list(final_outcomes), mapped_outcomes
 
 
 if __name__ == '__main__':
     reaction_smarts = '[C:1][OH:2]>>[C:1][O:2][C]'
     reactant_smiles = 'CC(=O)OCCCO'
-    outcomes = rdchiralRunText(reaction_smarts, reactant_smiles)
-    print(outcomes)
+    outcomes, mapped_outcomes = rdchiralRunText(reaction_smarts, reactant_smiles)
+    print(outcomes, mapped_outcomes)
+    
