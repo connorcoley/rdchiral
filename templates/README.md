@@ -8,13 +8,18 @@ Code to clean and extract templates from USPTO reaction database.
 ##### Pre-requisites
 
 * 7z archive extraction tool
+* rdkit
+* numpy
+* pandas
+* joblib
+
 
 ##### Step 1
 
 Download USPTO reaction database from https://figshare.com/articles/Chemical_reactions_from_US_patents_1976-Sep2016_/5104873, extract 7z archive, and place `1976_Sep2016_USPTOgrants_smiles.rsmi` into `data/` folder
 
 ```bash
-$ cd data/
+$ mkdir data/ && cd data/
 $ wget -O 1976_Sep2016_USPTOgrants_smiles.7z https://ndownloader.figshare.com/files/8664379
 $ 7z e 1976_Sep2016_USPTOgrants_smiles.7z
 $ cd ../
@@ -29,3 +34,9 @@ $ python clean_and_extract_uspto.py
 ```
 
 This will generate `data/uspto.reactions.json.gz` and `data/uspto.templates.json.gz`.
+
+TODO:
+* better documentation
+* argparse
+* template grouping
+* merge templates with reactions to generate training data

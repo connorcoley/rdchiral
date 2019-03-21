@@ -59,4 +59,4 @@ templates = Parallel(n_jobs=-1, verbose=4)(delayed(extract)(reaction) for reacti
 with gzip.open('data/uspto.templates.json.gz', 'w') as f:
     json.dump(templates, f)
     
-print('elapsed seconds: {:.1}'.format(time()-t0))
+print('elapsed seconds: {}'.format(int(time()-t0)))
