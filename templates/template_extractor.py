@@ -611,6 +611,7 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
             tetra_consistent = True
             all_matched_ids = []
             
+            # mefortunato addition
             # skip substructure matching if there are a lot of molecules in the fragment
             # this avoids rdkit GetSubstructMatches hanging indefinitely
             frag_smi = Chem.MolToSmiles(this_fragment_mol)
