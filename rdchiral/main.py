@@ -24,7 +24,17 @@ which has had all tetrahedral centers and bond directions stripped.
 
 (2) For each outcome, we examine the correspondence between atoms in the
 reactants and atoms in the reactant template for reasons to exclude the 
-current outcome. The following conditions are checked:
+current outcome. The way we do so is through dummy isotope numbers we assign
+to each atom in the reactants. That is because the isotope number is one of the 
+few properties always copied over to the products here:
+https://github.com/rdkit/rdkit/blob/master/Code/GraphMol/ChemReactions/ReactionRunner.cpp
+
+If an additional property is added to updateImplicitAtomProperties (like preserving
+the atom mapping directly, as was done in an unmaintained fork of RDKit here:
+https://github.com/connorcoley/rdkit), then would use that property instead of
+isotopes to keep track of the correspondence.
+
+The following conditions are checked:
 
     TETRAHEDRAL ATOMS
     (a) If a reactant atom is a tetrahedral center with specified chirality
@@ -495,14 +505,22 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True, r
         return list(final_outcomes)
 
 if __name__ == '__main__':
+    # Directly use SMILES/SMARTS
     reaction_smarts = '[C:1][OH:2]>>[C:1][O:2][C]'
-    reactant_smiles = 'CC(=O)OCCCO'
-    outcomes, mapped_outcomes = rdchiralRunText(reaction_smarts, reactant_smiles, return_mapped=True)
+    reactant_smiles = 'OCC(=O)OCCCO'
+    outcomes = rdchiralRunText(reaction_smarts, reactant_smiles)
+    print(outcomes)
+
+    # Pre-initialize
+    rxn = rdchiralReaction(reaction_smarts)
+    reactants = rdchiralReactants(reactant_smiles)
+    outcomes = rdchiralRun(rxn, reactants)
+    print(outcomes)
+
+    # Get list of atoms that changed as well
+    outcomes, mapped_outcomes = rdchiralRun(rxn, reactants, return_mapped=True)
     print(outcomes, mapped_outcomes)
 
-    PLEVEL = 5
-    reaction_smarts = '[#7:1]-[C:2](=[O;D1;H0:3])-[CH;@;D3;+0:4]1-[CH2;D2;+0:5]-[CH;@;D3;+0:9](-[C:7](-[#8:6])=[O;D1;H0:8])-[NH;D2;+0:10]-[CH;@;D3;+0:11]-1-[c:12]>>[#7:1]-[C:2](=[O;D1;H0:3])-[CH;D2;+0:4]=[CH2;D1;+0:5].[#8:6]-[C:7](=[O;D1;H0:8])-[CH2;D2;+0:9]/[N;H0;D2;+0:10]=[CH;D2;+0:11]/[c:12]'
-    reactant_smiles = 'CCOC(=O)[C@H]1C[C@@H](C(=O)N2[C@@H](c3ccccc3)CC[C@@H]2c2ccccc2)[C@@H](c2ccccc2)N1'
-    outcomes, mapped_outcomes = rdchiralRunText(reaction_smarts, reactant_smiles, return_mapped=True)
-    print(outcomes, mapped_outcomes)
-    print('### IF NO OUTCOMES WERE GENERATED, POSSIBLY HAVE INCOMPATIBLE VERSION OF RDKIT')
+    
+
+    
