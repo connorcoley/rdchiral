@@ -64,7 +64,7 @@ def atom_chirality_matches(a_tmp, a_mol):
             if PLEVEL >= 3: print('atom {} is specified in template, but cant possibly be chiral in mol'.format(a_mol.GetIsotope()))
             return 2
 
-        # TODO: figure out if we want this behavior - should a chiral template
+        # Discussion: figure out if we want this behavior - should a chiral template
         # be applied to an achiral molecule? For the retro case, if we have
         # a retro reaction that requires a specific stereochem, return False;
         # however, there will be many cases where the reaction would probably work
@@ -111,7 +111,6 @@ def atom_chirality_matches(a_tmp, a_mol):
         else:
             if PLEVEL >= 2: print('Isotope {} chiral match? Based on isotope lists, ambiguous -> True'.format(a_tmp.GetIsotope()))
             return 2 # ambiguous case, just return for now
-            # TODO: fix this?
 
     except IndexError as e:
         print(a_tmp.GetPropsAsDict())

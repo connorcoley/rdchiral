@@ -63,7 +63,6 @@ def enumerate_possible_cistrans_defs(template_r, \
     Once we have a local cis/trans definition for a double bond, we can enumerate
     the sixteen possible ways that a reactant could match it.
 
-    #TODO: figure out implicit cis from ring membership
     '''
 
     required_bond_defs = {}
