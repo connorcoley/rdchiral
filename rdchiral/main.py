@@ -292,6 +292,7 @@ def rdchiralRun(rxn, reactants, keep_isotopes=False, combine_enantiomers=True, r
                 new_b.SetBondDir(b.GetBondDir())
                 new_b.SetIsAromatic(b.GetIsAromatic())
             outcome = outcome.GetMol()
+            atoms_p = {a.GetIsotope(): a for a in outcome.GetAtoms() if a.GetIsotope()}
         else:
             if PLEVEL >= 3: print('No missing bonds')
         ###############################################################################
