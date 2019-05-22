@@ -13,10 +13,10 @@ def bond_dirs_by_mapnum(mol):
     bond_dirs_by_mapnum = {}
     for b in mol.GetBonds():
         i = None; j = None
-        if b.GetBeginAtom().HasProp('molAtomMapNumber'):
-            i = b.GetBeginAtom().GetIntProp('molAtomMapNumber')
-        if b.GetEndAtom().HasProp('molAtomMapNumber'):
-            j = b.GetEndAtom().GetIntProp('molAtomMapNumber')
+        if b.GetBeginAtom().GetAtomMapNum():
+            i = b.GetBeginAtom().GetAtomMapNum()
+        if b.GetEndAtom().GetAtomMapNum():
+            j = b.GetEndAtom().GetAtomMapNum()
         if i is None or j is None or b.GetBondDir() == BondDir.NONE:
             continue
         bond_dirs_by_mapnum[(i, j)] = b.GetBondDir()
@@ -24,7 +24,7 @@ def bond_dirs_by_mapnum(mol):
     return bond_dirs_by_mapnum
 
 def enumerate_possible_cistrans_defs(template_r, \
-        labeling_func=lambda a: a.GetIntProp('molAtomMapNumber')):
+        labeling_func=lambda a: a.GetAtomMapNum()):
     '''
     This function is meant to take a reactant template and fully enumerate
     all the ways in which different double-bonds can have their cis/trans
@@ -59,7 +59,7 @@ def enumerate_possible_cistrans_defs(template_r, \
     Gross.
 
     The way we do this is by first defining the *local* chirality of a double
-    bond, which weights side chains based purely on the unique isotope numbering.
+    bond, which weights side chains based purely on the unique mapnum numbering.
     Once we have a local cis/trans definition for a double bond, we can enumerate
     the sixteen possible ways that a reactant could match it.
 
@@ -93,7 +93,7 @@ def enumerate_possible_cistrans_defs(template_r, \
         required_bond_defs_coreatoms.add((ba_label, bb_label))
         required_bond_defs_coreatoms.add((bb_label, ba_label))
             
-        # Define heaviest isotope neighbor for each atom, excluding the other side of the double bond
+        # Define heaviest mapnum neighbor for each atom, excluding the other side of the double bond
         ba_neighbor_labels = [labeling_func(a) for a in ba.GetNeighbors()]
         ba_neighbor_labels.remove(bb_label) # remove other side of =
         ba_neighbor_labels_max = max(ba_neighbor_labels)
@@ -210,12 +210,12 @@ def enumerate_possible_cistrans_defs(template_r, \
     if PLEVEL >= 10: print(str([(k, v) for (k, v) in required_bond_defs.items()]))
     return required_bond_defs, required_bond_defs_coreatoms
 
-def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
+def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetAtomMapNum()):
     '''
     This function takes a molecule and returns a list of cis/trans specifications
     according to the following:
 
-    (isotopes, dirs)
+    (mapnums, dirs)
 
     where atoms = (a1, a2, a3, a4) and dirs = (d1, d2)
     and (a1, a2) defines the ENDUPRIGHT/ENDDOWNRIGHT direction of the "front"
@@ -227,7 +227,7 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
     match this specific definition to the full set of possible definitions
     when determining if a match should be made.
 
-    NOTE: the atom isotopes are returned. This is so we can later use them
+    NOTE: the atom mapnums are returned. This is so we can later use them
     to get the old_mapno property from the corresponding product atom, which is
     an outcome-specific assignment
 
@@ -258,20 +258,20 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
                                bb_label))
         
         # Try to specify front and back direction separately
-        front_isotopes = None 
+        front_mapnums = None 
         front_dir = None 
-        back_isotopes = None 
+        back_mapnums = None 
         back_dir = None
         is_implicit = False 
         bab = None; bbb = None;
         for bab in (z for z in ba.GetBonds() if z.GetBondType() != BondType.DOUBLE):
             if bab.GetBondDir() != BondDir.NONE:
-                front_isotopes = (labeling_func(bab.GetBeginAtom()), labeling_func(bab.GetEndAtom()))
+                front_mapnums = (labeling_func(bab.GetBeginAtom()), labeling_func(bab.GetEndAtom()))
                 front_dir = bab.GetBondDir()
                 break 
         for bbb in (z for z in bb.GetBonds() if z.GetBondType() != BondType.DOUBLE):
             if bbb.GetBondDir() != BondDir.NONE:
-                back_isotopes = (labeling_func(bbb.GetBeginAtom()), labeling_func(bbb.GetEndAtom()))
+                back_mapnums = (labeling_func(bbb.GetBeginAtom()), labeling_func(bbb.GetEndAtom()))
                 back_dir = bbb.GetBondDir()
                 break 
 
@@ -288,8 +288,8 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
                     atomrings = mol.GetRingInfo().AtomRings() # tuple of tuples of atomIdx
                 for atomring in atomrings:
                     if ba.GetIdx() in atomring and bb.GetIdx() in atomring:
-                        front_isotopes = (labeling_func(bab.GetOtherAtom(ba)), ba_label)
-                        back_isotopes = (bb_label, labeling_func(bbb.GetOtherAtom(bb)))
+                        front_mapnums = (labeling_func(bab.GetOtherAtom(ba)), ba_label)
+                        back_mapnums = (bb_label, labeling_func(bbb.GetOtherAtom(bb)))
                         if (bab.GetOtherAtomIdx(ba.GetIdx()) in atomring) != \
                                 (bbb.GetOtherAtomIdx(bb.GetIdx()) in atomring):
                             # one of these atoms are in the ring, one is outside -> trans
@@ -308,15 +308,15 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
                 # Specify direction as BondDir.NONE using whatever bab and bbb were at the end fo the loop
                 # note: this is why we use "for bab in ___generator___", so that we know the current
                 #       value of bab and bbb correspond to a single bond we can def. by
-                front_isotopes = (labeling_func(bab.GetBeginAtom()), labeling_func(bab.GetEndAtom()))
+                front_mapnums = (labeling_func(bab.GetBeginAtom()), labeling_func(bab.GetEndAtom()))
                 front_dir = BondDir.NONE
-                back_isotopes = (labeling_func(bbb.GetBeginAtom()), labeling_func(bbb.GetEndAtom()))
+                back_mapnums = (labeling_func(bbb.GetBeginAtom()), labeling_func(bbb.GetEndAtom()))
                 back_dir = BondDir.NONE
 
         # Save this (a1, a2, a3, a4) -> (d1, d2) spec
         atoms_across_double_bonds.append(
             (
-                front_isotopes + back_isotopes,
+                front_mapnums + back_mapnums,
                 (front_dir, back_dir),
                 is_implicit,
             )
@@ -324,35 +324,35 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetIsotope()):
 
     return atoms_across_double_bonds
 
-def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_isotope):
+def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_mapnum):
     '''Copy over single-bond directions (ENDUPRIGHT, ENDDOWNRIGHT) to 
     the single bonds attached to some double-bonded atom, a
 
     a - atom with a double bond
-    bond_dirs_by_isotope - dictionary of (begin_isotope, end_isotope): bond_dir
+    bond_dirs_by_mapnum - dictionary of (begin_mapnum, end_mapnum): bond_dir
         that defines if a bond should be ENDUPRIGHT or ENDDOWNRIGHT. The reverse
         key is also included with the reverse bond direction. If the source
         molecule did not have a specified chirality at this double bond, then
-        the isotope tuples will be missing from the dict
+        the mapnum tuples will be missing from the dict
 
     In some cases, like C=C/O>>C=C/Br, we should assume that stereochem was
-    preserved, even though isotopes won't match. There might be some reactions
+    preserved, even though mapnums won't match. There might be some reactions
     where the chirality is inverted (like C=C/O >> C=C\Br), but let's not
     worry about those for now...
 
     Returns True if a bond direction was copied'''
 
     for bond_to_spec in a.GetBonds():
-        if (bond_to_spec.GetOtherAtom(a).GetIsotope(), a.GetIsotope()) in bond_dirs_by_isotope:
+        if (bond_to_spec.GetOtherAtom(a).GetAtomMapNum(), a.GetAtomMapNum()) in bond_dirs_by_mapnum:
             bond_to_spec.SetBondDir(
-                bond_dirs_by_isotope[
-                    (bond_to_spec.GetBeginAtom().GetIsotope(),
-                     bond_to_spec.GetEndAtom().GetIsotope())
+                bond_dirs_by_mapnum[
+                    (bond_to_spec.GetBeginAtom().GetAtomMapNum(),
+                     bond_to_spec.GetEndAtom().GetAtomMapNum())
                 ]
             )
             if PLEVEL >= 2: print('Tried to copy bond direction b/w {} and {}'.format(
-                bond_to_spec.GetBeginAtom().GetIsotope(),
-                bond_to_spec.GetEndAtom().GetIsotope()
+                bond_to_spec.GetBeginAtom().GetAtomMapNum(),
+                bond_to_spec.GetEndAtom().GetAtomMapNum()
             ))
             return True
     
@@ -367,16 +367,16 @@ def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_isotope):
                 continue
             if not bond_to_spec.GetOtherAtom(a).HasProp('old_mapno'): 
                 # new atom, deg2->deg2, assume direction preserved
-                if PLEVEL >= 5: print('Only single-bond attachment to atom {} is new, try to reproduce chirality'.format(a.GetIsotope()))
+                if PLEVEL >= 5: print('Only single-bond attachment to atom {} is new, try to reproduce chirality'.format(a.GetAtomMapNum()))
                 needs_inversion = False 
             else:
                 # old atom, just was not used in chirality definition - set opposite
-                if PLEVEL >= 5: print('Only single-bond attachment to atom {} is old, try to reproduce chirality'.format(a.GetIsotope()))
+                if PLEVEL >= 5: print('Only single-bond attachment to atom {} is old, try to reproduce chirality'.format(a.GetAtomMapNum()))
                 needs_inversion = True
 
-            for (i, j), bond_dir in bond_dirs_by_isotope.items():
+            for (i, j), bond_dir in bond_dirs_by_mapnum.items():
                 if bond_dir != BondDir.NONE:
-                    if i == bond_to_spec.GetBeginAtom().GetIsotope():
+                    if i == bond_to_spec.GetBeginAtom().GetAtomMapNum():
                         if needs_inversion:
                             bond_to_spec.SetBondDir(BondDirOpposite[bond_dir])
                         else:
@@ -396,9 +396,9 @@ def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_isotope):
                 # looking at a new atom, assume same as removed atom
                 needs_inversion = False 
 
-            for (i, j), bond_dir in bond_dirs_by_isotope.items():
+            for (i, j), bond_dir in bond_dirs_by_mapnum.items():
                 if bond_dir != BondDir.NONE:
-                    if i == bond_to_spec.GetBeginAtom().GetIsotope():
+                    if i == bond_to_spec.GetBeginAtom().GetAtomMapNum():
                         if needs_inversion:
                             bond_to_spec.SetBondDir(BondDirOpposite[bond_dir])
                         else:
