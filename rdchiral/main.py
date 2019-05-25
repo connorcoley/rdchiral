@@ -149,15 +149,6 @@ def rdchiralRun(rxn, reactants, keep_mapnums=False, combine_enantiomers=True, re
         # Check to see if reactants should not have been matched (based on chirality)
 
         # Define map num -> reactant template atom map
-
-        ## DEBUGGING
-        # print('#')
-        # print(atoms_rt_map)
-        # print([a.GetIntProp('old_mapno') for m in outcome for a in m.GetAtoms() if a.HasProp('old_mapno')])
-        # for m in outcome:
-        #     for a in m.GetAtoms():
-        #         print(a.GetPropsAsDict())
-
         atoms_rt =  {a.GetAtomMapNum(): atoms_rt_map[a.GetIntProp('old_mapno')] \
             for m in outcome for a in m.GetAtoms() if a.HasProp('old_mapno')}
 
@@ -198,6 +189,10 @@ def rdchiralRun(rxn, reactants, keep_mapnums=False, combine_enantiomers=True, re
                 # So, check if it is consistent with how the template is defined
                 #...but /=/ should match \=\ since they are both trans...
                 matched_atom_map_nums = tuple(atoms_rt[i].GetAtomMapNum() for i in atoms)
+
+                # Convert atoms_rt to original template's atom map numbers:
+                matched_atom_map_nums = tuple(rxn.atoms_rt_idx_to_map[atoms_rt[i].GetIdx()] for i in atoms)
+                
                 if matched_atom_map_nums not in rxn.required_rt_bond_defs:
                     continue # this can happen in ring openings, for example
                 dirs_template = rxn.required_rt_bond_defs[matched_atom_map_nums]
@@ -533,7 +528,3 @@ if __name__ == '__main__':
     # Get list of atoms that changed as well
     outcomes, mapped_outcomes = rdchiralRun(rxn, reactants, return_mapped=True)
     print(outcomes, mapped_outcomes)
-
-    
-
-    

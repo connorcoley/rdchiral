@@ -78,7 +78,7 @@ def atom_chirality_matches(a_tmp, a_mol):
         if PLEVEL >= 3: print('...but the rtemplate atom could not have had chirality specified, match anyway')
         return 2
 
-    mapnums_tmp = [a.GetAtomMapNum() for a in a_tmp.GetNeighbors()]
+    mapnums_tmp = [a.GetAtomMapNum() for a in a_tmp.GetNeighbors()]    
     mapnums_mol = [a.GetAtomMapNum() for a in a_mol.GetNeighbors()]
 
     # When there are fewer than 3 heavy neighbors, chirality is ambiguous...

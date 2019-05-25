@@ -110,13 +110,20 @@ def initialize_rxn_from_smarts(reaction_smarts):
         raise ValueError('validation failed')
     if PLEVEL >= 2: print('Validated rxn without errors')
 
+
+    # Figure out if there are unnecessary atom map numbers (that are not balanced)
+    # e.g., leaving groups for retrosynthetic templates. This is because additional
+    # atom map numbers in the input SMARTS template may conflict with the atom map
+    # numbers of the molecules themselves
+    prd_maps = [a.GetAtomMapNum() for prd in rxn.GetProducts() for a in prd.GetAtoms() if a.GetAtomMapNum()]
+
     unmapped = 700
     for rct in rxn.GetReactants():
         rct.UpdatePropertyCache()
         Chem.AssignStereochemistry(rct)
         # Fill in atom map numbers
         for a in rct.GetAtoms():
-            if not a.GetAtomMapNum():
+            if not a.GetAtomMapNum() or a.GetAtomMapNum() not in prd_maps:
                 a.SetAtomMapNum(unmapped)
                 unmapped += 1
     if PLEVEL >= 2: print('Added {} map nums to unmapped reactants'.format(unmapped-700))
