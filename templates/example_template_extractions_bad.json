@@ -1,0 +1,20 @@
+[
+    {
+        "reaction_id": 69,
+        "reactants": "Cl-[CH;D3;+0:1](-[C;D1;H3:2])-[c;H0;D3;+0:3]1:[n;H0;D2;+0:4]:c:s:c:1.O=[S;H0;D3;+0:5](-[CH3;D1;+0:6])-[CH3;D1;+0:7].[C-;H0;D1:8]#[N;H0;D1;+0:9]",
+        "intra_only": false,
+        "products": "[C;D1;H3:2]-[CH;D3;+0:1](-[C;H0;D2;+0:3]#[N;H0;D1;+0:4])-[c;H0;D3;+0:8]1:[cH;D2;+0:7]:[s;H0;D2;+0:5]:[cH;D2;+0:6]:[n;H0;D2;+0:9]:1",
+        "reaction_smarts": "[C;D1;H3:2]-[CH;D3;+0:1](-[C;H0;D2;+0:3]#[N;H0;D1;+0:4])-[c;H0;D3;+0:8]1:[cH;D2;+0:7]:[s;H0;D2;+0:5]:[cH;D2;+0:6]:[n;H0;D2;+0:9]:1>>Cl-[CH;D3;+0:1](-[C;D1;H3:2])-[c;H0;D3;+0:3]1:[n;H0;D2;+0:4]:c:s:c:1.O=[S;H0;D3;+0:5](-[CH3;D1;+0:6])-[CH3;D1;+0:7].[C-;H0;D1:8]#[N;H0;D1;+0:9]",
+        "dimer_only": false,
+        "necessary_reagent": ""
+    },
+    {
+        "reaction_id": 97,
+        "reactants": "C-[CH2;D2;+0:1]-[C:2]",
+        "intra_only": true,
+        "products": "[C:2]-[CH3;D1;+0:1]",
+        "reaction_smarts": "[C:2]-[CH3;D1;+0:1]>>C-[CH2;D2;+0:1]-[C:2]",
+        "dimer_only": false,
+        "necessary_reagent": ""
+    }
+]
