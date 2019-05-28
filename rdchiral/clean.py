@@ -10,7 +10,7 @@ def canonicalize_outcome_smiles(smiles, ensure=True):
     # Uniquify via SMILES string - a little sloppy
     # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
     # also, split by '.' and sort when outcome contains multiple molecules
-    if ensure or not keep_isotopes: 
+    if ensure: 
         outcome = Chem.MolFromSmiles(smiles)
         if outcome is None:
             if PLEVEL >= 1: print('~~ could not parse self?')

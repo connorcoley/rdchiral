@@ -86,10 +86,10 @@ def bond_to_label(bond):
     
     a1_label = str(bond.GetBeginAtom().GetAtomicNum())
     a2_label = str(bond.GetEndAtom().GetAtomicNum())
-    if bond.GetBeginAtom().HasProp('molAtomMapNumber'):
-        a1_label += bond.GetBeginAtom().GetProp('molAtomMapNumber')
-    if bond.GetEndAtom().HasProp('molAtomMapNumber'):
-        a2_label += bond.GetEndAtom().GetProp('molAtomMapNumber')
+    if bond.GetBeginAtom().GetAtomMapNum():
+        a1_label += str(bond.GetBeginAtom().GetAtomMapNum())
+    if bond.GetEndAtom().GetAtomMapNum():
+        a2_label += str(bond.GetEndAtom().GetAtomMapNum())
     atoms = sorted([a1_label, a2_label])
 
     return '{}{}{}'.format(atoms[0], bond.GetSmarts(), atoms[1])
