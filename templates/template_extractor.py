@@ -729,6 +729,7 @@ def extract_from_reaction(reaction):
 
     if are_unmapped_product_atoms: # add fragment to template
         for product in products:
+            prod_atoms = product.GetAtoms()
             # Get unmapped atoms
             unmapped_ids = [
                 a.GetIdx() for a in prod_atoms if not a.HasProp('molAtomMapNumber')
