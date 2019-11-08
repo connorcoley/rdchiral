@@ -19,7 +19,7 @@ class rdchiralReaction():
     def __init__(self, reaction_smarts):
         # Keep smarts, useful for reporting
         self.reaction_smarts = reaction_smarts
-        
+
         # Initialize - assigns stereochemistry and fills in missing rct map numbers
         self.rxn = initialize_rxn_from_smarts(reaction_smarts)
 
@@ -31,7 +31,7 @@ class rdchiralReaction():
             for a in self.template_r.GetAtoms() if a.GetAtomMapNum()}
         self.atoms_pt_map = {a.GetAtomMapNum(): a \
             for a in self.template_p.GetAtoms() if a.GetAtomMapNum()}
-        
+
         # Back-up the mapping for the reaction
         self.atoms_rt_idx_to_map = {a.GetIdx(): a.GetAtomMapNum()
             for a in self.template_r.GetAtoms()}
@@ -68,7 +68,7 @@ class rdchiralReactants():
     '''
     def __init__(self, reactant_smiles):
         # Keep original smiles, useful for reporting
-        self.reactant_smiles = reactant_smiles  
+        self.reactant_smiles = reactant_smiles
 
         # Initialize into RDKit mol
         self.reactants = initialize_reactants_from_smiles(reactant_smiles)
@@ -119,7 +119,7 @@ def initialize_rxn_from_smarts(reaction_smarts):
 
     unmapped = 700
     for rct in rxn.GetReactants():
-        rct.UpdatePropertyCache()
+        rct.UpdatePropertyCache(strict=False)
         Chem.AssignStereochemistry(rct)
         # Fill in atom map numbers
         for a in rct.GetAtoms():
@@ -136,7 +136,7 @@ def initialize_reactants_from_smiles(reactant_smiles):
     # Initialize reactants
     reactants = Chem.MolFromSmiles(reactant_smiles)
     Chem.AssignStereochemistry(reactants, flagPossibleStereoCenters=True)
-    reactants.UpdatePropertyCache()
+    reactants.UpdatePropertyCache(strict=False)
     # To have the product atoms match reactant atoms, we
     # need to populate the map number field, since this field
     # gets copied over during the reaction via reactant_atom_idx.
