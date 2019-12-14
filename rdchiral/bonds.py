@@ -10,6 +10,14 @@ BondDirLabel    = {AllChem.BondDir.ENDUPRIGHT: '\\',
                    AllChem.BondDir.ENDDOWNRIGHT: '/'}
 
 def bond_dirs_by_mapnum(mol):
+    '''Determine BondDir for atom mapped atoms in an RDKit molecule
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule to determine BondDirs
+
+    Returns:
+       dict: Mapping from (atom_map1, atom_map2) -> BondDir
+    '''
     bond_dirs_by_mapnum = {}
     for b in mol.GetBonds():
         i = None; j = None
@@ -23,10 +31,8 @@ def bond_dirs_by_mapnum(mol):
         bond_dirs_by_mapnum[(j, i)] = BondDirOpposite[b.GetBondDir()]
     return bond_dirs_by_mapnum
 
-def enumerate_possible_cistrans_defs(template_r, \
-        labeling_func=lambda a: a.GetAtomMapNum()):
-    '''
-    This function is meant to take a reactant template and fully enumerate
+def enumerate_possible_cistrans_defs(template_r, labeling_func=lambda a: a.GetAtomMapNum()):
+    '''This function is meant to take a reactant template and fully enumerate
     all the ways in which different double-bonds can have their cis/trans
     chirality specified (based on labeling_func). This is necessary because
     double-bond chirality cannot be specified using cis/trans (global properties)
@@ -56,13 +62,18 @@ def enumerate_possible_cistrans_defs(template_r, \
     reactant atom and check if its chirality is within the list of acceptable
     definitions to determine if a match was made.
 
-    Gross.
-
     The way we do this is by first defining the *local* chirality of a double
     bond, which weights side chains based purely on the unique mapnum numbering.
     Once we have a local cis/trans definition for a double bond, we can enumerate
     the sixteen possible ways that a reactant could match it.
 
+    Args:
+        template_r: reactant template
+        labeling_func (callable): Callable function to label an atom. 
+            Function should take an atom and return an int.
+    
+    Returns:
+        (dict, set): Returns required_bond_defs and required_bond_defs_coreatoms
     '''
 
     required_bond_defs = {}
@@ -210,9 +221,8 @@ def enumerate_possible_cistrans_defs(template_r, \
     if PLEVEL >= 10: print(str([(k, v) for (k, v) in required_bond_defs.items()]))
     return required_bond_defs, required_bond_defs_coreatoms
 
-def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetAtomMapNum()):
-    '''
-    This function takes a molecule and returns a list of cis/trans specifications
+def get_atoms_across_double_bonds(mol, labeling_func=lambda a: a.GetAtomMapNum()):
+    '''This function takes a molecule and returns a list of cis/trans specifications
     according to the following:
 
     (mapnums, dirs)
@@ -233,6 +243,14 @@ def get_atoms_across_double_bonds(mol, labeling_func=lambda a:a.GetAtomMapNum())
 
     We also include implicit chirality here based on ring membership, but keep
     track of that separately
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule
+        labeling_func (callable): Callable function to label an atom. 
+            Function should take an atom and return an int.
+
+    Returns:
+        list: atoms_across_double_bonds
     '''
     atoms_across_double_bonds = []
     atomrings = None
@@ -328,19 +346,21 @@ def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_mapnum):
     '''Copy over single-bond directions (ENDUPRIGHT, ENDDOWNRIGHT) to 
     the single bonds attached to some double-bonded atom, a
 
-    a - atom with a double bond
-    bond_dirs_by_mapnum - dictionary of (begin_mapnum, end_mapnum): bond_dir
-        that defines if a bond should be ENDUPRIGHT or ENDDOWNRIGHT. The reverse
-        key is also included with the reverse bond direction. If the source
-        molecule did not have a specified chirality at this double bond, then
-        the mapnum tuples will be missing from the dict
-
     In some cases, like C=C/O>>C=C/Br, we should assume that stereochem was
     preserved, even though mapnums won't match. There might be some reactions
     where the chirality is inverted (like C=C/O >> C=C\Br), but let's not
     worry about those for now...
 
-    Returns True if a bond direction was copied'''
+    Args:
+        a (rdkit.Chem.rdchem.Atom): RDKit atom with double bond
+        bond_dirs_by_mapnum - dictionary of (begin_mapnum, end_mapnum): bond_dir
+            that defines if a bond should be ENDUPRIGHT or ENDDOWNRIGHT. The reverse
+            key is also included with the reverse bond direction. If the source
+            molecule did not have a specified chirality at this double bond, then
+            the mapnum tuples will be missing from the dict
+    Returns:
+        bool: Returns Trueif a bond direction was copied
+    '''
 
     for bond_to_spec in a.GetBonds():
         if (bond_to_spec.GetOtherAtom(a).GetAtomMapNum(), a.GetAtomMapNum()) in bond_dirs_by_mapnum:

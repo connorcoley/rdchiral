@@ -10,11 +10,24 @@ from rdchiral.bonds import enumerate_possible_cistrans_defs, bond_dirs_by_mapnum
 BondDirOpposite = {AllChem.BondDir.ENDUPRIGHT: AllChem.BondDir.ENDDOWNRIGHT,
                    AllChem.BondDir.ENDDOWNRIGHT: AllChem.BondDir.ENDUPRIGHT}
 
-class rdchiralReaction():
-    '''
-    Class to store everything that should be pre-computed for a reaction. This
+class rdchiralReaction(object):
+    '''Class to store everything that should be pre-computed for a reaction. This
     makes library application much faster, since we can pre-do a lot of work
     instead of doing it for every mol-template pair
+
+    Attributes:
+        reaction_smarts (str): reaction SMARTS string
+        rxn (rdkit.Chem.rdChemReactions.ChemicalReaction): RDKit reaction object.
+            Generated from `reaction_smarts` using `initialize_rxn_from_smarts`
+        template_r: Reaction reactant template fragments
+        template_p: Reaction product template fragments
+        atoms_rt_map (dict): Dictionary mapping from atom map number to RDKit Atom for reactants
+        atoms_pt_map (dict): Dictionary mapping from atom map number to RDKit Atom for products
+        atoms_rt_idx_to_map (dict): Dictionary mapping from atom idx to RDKit Atom for reactants
+        atoms_pt_idx_to_map (dict): Dictionary mapping from atom idx to RDKit Atom for products
+
+    Args:
+        reaction_smarts (str): Reaction SMARTS string
     '''
     def __init__(self, reaction_smarts):
         # Keep smarts, useful for reporting
@@ -56,15 +69,29 @@ class rdchiralReaction():
             enumerate_possible_cistrans_defs(self.template_r)
 
     def reset(self):
+        '''Reset atom map numbers for template fragment atoms'''
         for (idx, mapnum) in self.atoms_rt_idx_to_map.items():
             self.template_r.GetAtomWithIdx(idx).SetAtomMapNum(mapnum)
         for (idx, mapnum) in self.atoms_pt_idx_to_map.items():
             self.template_p.GetAtomWithIdx(idx).SetAtomMapNum(mapnum)
 
-class rdchiralReactants():
-    '''
-    Class to store everything that should be pre-computed for a reactant mol
+class rdchiralReactants(object):
+    '''Class to store everything that should be pre-computed for a reactant mol
     so that library application is faster
+
+    Attributes:
+        reactant_smiles (str): Reactant SMILES string
+        reactants (rdkit.Chem.rdchem.Mol): RDKit Molecule create from `initialize_reactants_from_smiles`
+        atoms_r (dict): Dictionary mapping from atom map number to atom in `reactants` Molecule
+        idx_to_mapnum (callable): callable function that takes idx and returns atom map number
+        reactants_achiral (rdkit.Chem.rdchem.Mol): achiral version of `reactants`
+        bonds_by_mapnum (list): List of reactant bonds
+            (int, int, rdkit.Chem.rdchem.Bond)
+        bond_dirs_by_mapnum (dict): Dictionary mapping from atom map number tuples to BondDir
+        atoms_across_double_bonds (list): List of cis/trans specifications from `get_atoms_across_double_bonds`
+
+    Args:
+        reactant_smiles (str): Reactant SMILES string
     '''
     def __init__(self, reactant_smiles):
         # Keep original smiles, useful for reporting
@@ -103,6 +130,14 @@ class rdchiralReactants():
 
 
 def initialize_rxn_from_smarts(reaction_smarts):
+    '''Initialize RDKit reaction object from SMARTS string
+
+    Args:
+        reaction_smarts (str): Reaction SMARTS string
+
+    Returns:
+        rdkit.Chem.rdChemReactions.ChemicalReaction: RDKit reaction object
+    '''
     # Initialize reaction
     rxn = AllChem.ReactionFromSmarts(reaction_smarts)
     rxn.Initialize()
@@ -133,6 +168,14 @@ def initialize_rxn_from_smarts(reaction_smarts):
     return rxn
 
 def initialize_reactants_from_smiles(reactant_smiles):
+    '''Initialize RDKit molecule from SMILES string
+
+    Args:
+        reactant_smiles (str): Reactant SMILES string
+
+    Returns:
+        rdkit.Chem.rdchem.Mol: RDKit molecule
+    '''
     # Initialize reactants
     reactants = Chem.MolFromSmiles(reactant_smiles)
     Chem.AssignStereochemistry(reactants, flagPossibleStereoCenters=True)
@@ -145,6 +188,14 @@ def initialize_reactants_from_smiles(reactant_smiles):
     return reactants
 
 def get_template_frags_from_rxn(rxn):
+    '''Get template fragments from RDKit reaction object
+
+    Args:
+        rxn (rdkit.Chem.rdChemReactions.ChemicalReaction): RDKit reaction object
+
+    Returns:
+        (rdkit.Chem.rdchem.Mol, rdkit.Chem.rdchem.Mol): tuple of fragment molecules
+    '''
     # Copy reaction template so we can play around with map numbers
     for i, rct in enumerate(rxn.GetReactants()):
         if i == 0:

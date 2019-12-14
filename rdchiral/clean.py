@@ -7,9 +7,20 @@ from rdchiral.utils import vprint, PLEVEL
 
 
 def canonicalize_outcome_smiles(smiles, ensure=True):
-    # Uniquify via SMILES string - a little sloppy
-    # Need a full SMILES->MOL->SMILES cycle to get a true canonical string
-    # also, split by '.' and sort when outcome contains multiple molecules
+    '''Uniquify via SMILES string.
+    
+    Need a full SMILES->MOL->SMILES cycle to get a true canonical string.
+    Split by '.' and sort when outcome contains multiple molecules.
+
+    Args:
+        smiles (str): SMILES string
+        ensure (bool): Whether to do SMILES->MOL-SMILES cycle.
+            Otherwise only sort molecules within string.
+
+    Returns:
+        str: canonicalized, sorted SMILES string
+
+    '''
     if ensure: 
         outcome = Chem.MolFromSmiles(smiles)
         if outcome is None:
@@ -28,8 +39,14 @@ def combine_enantiomers_into_racemic(final_outcomes):
     the achiral one instead.
     
     This is not very sophisticated, since the chirality could affect the bond
-    order and thus the canonical SMILES. But, whatever. It also does not look
+    order and thus the canonical SMILES. It also does not look
     to invert multiple stereocenters at once
+
+    Args:
+        final_outcomes: iterable to act upon
+
+    Returns:
+        list: modified final_outcomes
     '''
 
     for smiles in list(final_outcomes)[:]:

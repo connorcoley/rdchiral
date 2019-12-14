@@ -4,11 +4,18 @@ from rdkit.Chem.rdchem import ChiralType, BondType, BondDir
 from rdchiral.utils import vprint, parity4, PLEVEL
 
 def template_atom_could_have_been_tetra(a, strip_if_spec=False, cache=True):
-    '''
-    Could this atom have been a tetrahedral center?
+    '''Could this atom have been a tetrahedral center?
     If yes, template atom is considered achiral and will not match a chiral rct
     If no, the tempalte atom is auxilliary and we should not use it to remove
     a matched reaction. For example, a fully-generalized terminal [C:1] 
+
+    Args:
+        a (rdkit.Chem.rdchem.Atom): RDKit atom
+        strip_if_spec (bool, optional): Defaults to False.
+        cache (bool, optional): Defaults to True.
+
+    Returns:
+        bool: Returns True if this atom have been a tetrahedral center
     '''
 
     if a.HasProp('tetra_possible'):
@@ -26,7 +33,16 @@ def template_atom_could_have_been_tetra(a, strip_if_spec=False, cache=True):
 
 
 def copy_chirality(a_src, a_new):
+    '''Copy chirality from a_src to a_new
 
+    Args:
+        a_src (rdkit.Chem.rdchem.Atom): Source RDKit atom
+        a_new (rdkit.Chem.rdchem.Atom): RDKit atom to have chirality changed
+
+    Returns:
+        None
+
+    '''
     # Not possible to be a tetrahedral center anymore?
     if a_new.GetDegree() < 3:
         return 
@@ -48,10 +64,16 @@ def atom_chirality_matches(a_tmp, a_mol):
 
     Also checks to see if chirality needs to be inverted in copy_chirality
 
-    Returns +1 if it is a match and there is no need for inversion (or ambiguous)
-    Returns -1 if it is a match but they are the opposite
-    Returns 0 if an explicit NOT match
-    Returns 2 if ambiguous or achiral-achiral
+    Args:
+        a_tmp (rdkit.Chem.rdchem.Atom): RDKit Atom
+        a_mol (rdkit.Chem.rdchem.Mol): RDKit Mol
+
+    Returns:
+        int: Integer value of match result
+            +1 if it is a match and there is no need for inversion (or ambiguous)
+            -1 if it is a match but they are the opposite
+            0 if an explicit NOT match
+            2 if ambiguous or achiral-achiral
     '''
     if a_mol.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
         if a_tmp.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
