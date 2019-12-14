@@ -82,7 +82,14 @@ def parity4(data):
 
 def bond_to_label(bond):
     '''This function takes an RDKit bond and creates a label describing
-    the most important attributes'''
+    the most important attributes
+    
+    Args:
+        bond (rdkit.Chem.rdchem.Bond): RDKit bond object
+
+    Returns:
+        str: String representing most important attributes of bond
+    '''
     
     a1_label = str(bond.GetBeginAtom().GetAtomicNum())
     a2_label = str(bond.GetEndAtom().GetAtomicNum())
@@ -96,7 +103,15 @@ def bond_to_label(bond):
 
 
 def atoms_are_different(atom1, atom2):
-    '''Compares two RDKit atoms based on basic properties'''
+    '''Compares two RDKit atoms based on basic properties
+    
+    Args:
+        atom1 (rdkit.Chem.rdchem.Atom): First atom to compare
+        atom2 (rdkit.Chem.rdchem.Atom): Second atom to compare
+
+    Returns:
+        bool: Whether the two atoms are different
+    '''
 
     if atom1.GetSmarts() != atom2.GetSmarts(): return True # should be very general
     if atom1.GetAtomicNum() != atom2.GetAtomicNum(): return True # must be true for atom mapping

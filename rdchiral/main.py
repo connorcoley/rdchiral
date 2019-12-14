@@ -79,19 +79,37 @@ template.
 def rdchiralRunText(reaction_smarts, reactant_smiles, **kwargs):
     '''Run from SMARTS string and SMILES string. This is NOT recommended
     for library application, since initialization is pretty slow. You should
-    separately initialize the template and molecules and call run()'''
+    separately initialize the template and molecules and call run()
+    
+    Args:
+        reaction_smarts (str): Reaction SMARTS string
+        reactant_smiles (str): Reactant SMILES string
+        **kwargs: passed through to `rdchiralRun`
+
+    Returns:
+        list: List of outcomes from `rdchiralRun`
+    '''
     rxn = rdchiralReaction(reaction_smarts)
     reactants = rdchiralReactants(reactant_smiles)
     return rdchiralRun(rxn, reactants, **kwargs)
 
 def rdchiralRun(rxn, reactants, keep_mapnums=False, combine_enantiomers=True, return_mapped=False):
-    '''
-    rxn = rdchiralReaction (rdkit reaction + auxilliary information)
-    reactants = rdchiralReactants (rdkit mol + auxilliary information)
+    '''Run rdchiral reaction
 
-    note: there is a fair amount of initialization (assigning stereochem), most
+    NOTE: there is a fair amount of initialization (assigning stereochem), most
     importantly assigning atom map numbers to the reactant atoms. It is 
     HIGHLY recommended to use the custom classes for initialization.
+
+    Args:
+        rxn (rdchiralReaction): (rdkit reaction + auxilliary information)
+        reactants (rdchiralReactants): (rdkit mol + auxilliary information)
+        keep_mapnums (bool): Whether to keep map numbers or not
+        combine_enantiomers (bool): Whether to combine enantiomers
+        return_mapped (bool): Whether to additionally return atom mapped SMILES strings
+
+    Returns:
+        (list, str (optional)): Returns list of outcomes. If `return_mapped` is True,
+            additionally return atom mapped SMILES strings
     '''
 
     # New: reset atom map numbers for templates in case they have been overwritten
