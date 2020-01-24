@@ -51,7 +51,6 @@ def get_tagged_atoms_from_mol(mol):
 def atoms_are_different(atom1, atom2):
     '''Compares two RDKit atoms based on basic properties'''
 
-    if atom1.GetSmarts() != atom2.GetSmarts(): return True # easiest check
     if atom1.GetAtomicNum() != atom2.GetAtomicNum(): return True # must be true for atom mapping
     if atom1.GetTotalNumHs() != atom2.GetTotalNumHs(): return True
     if atom1.GetFormalCharge() != atom2.GetFormalCharge(): return True
