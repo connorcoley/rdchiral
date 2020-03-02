@@ -253,8 +253,8 @@
 	},
     {
         "smarts": "[O-;H0;D1:3]-[N+;H0;D3:1](=[O;D1;H0:2])-[c;H0;D3;+0:5](:[c:4]):[c:6]>>[O-]-[N+;H0;D3:1](=[O;D1;H0:2])-[OH;D1;+0:3].[c:4]:[cH;D2;+0:5]:[c:6]",
-        "smiles": "CC1=C(C=C(C=C1[N+](=O)[O-])[N+](=O)[O-])[N+](=O)[O-]",
-        "expected": ["Cc1ccc([N+](=O)[O-])cc1[N+](=O)[O-].O=[N+]([O-])O", "Cc1c([N+](=O)[O-])cccc1[N+](=O)[O-].O=[N+]([O-])O"],
+        "smiles": "O=[N+]([O-])c1ccccc1",
+        "expected": ["O=[N+]([O-])O.c1ccccc1"],
         "description": "Nitration template with 'hypervalent' nitrogen"
     }
 ]
