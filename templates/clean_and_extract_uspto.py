@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 from time import time
 
 
-import template_extractor
+from rdchiral import template_extractor
 
 def can_parse(rsmi):
     react, spec, prod = rsmi.split('>')
