@@ -12,6 +12,10 @@ To install RDChiral run
 
 ```pip install rdchiral```
 
+To get the most recent version reflected by this git repo, install with
+
+```pip install -e "git://github.com/connorcoley/rdchiral.git#egg=rdchiral"```
+
 ## Documentation
 
 See ```rdchiral/main.py``` for a brief description of expected behavior and a few basic examples of how to use the wrapper. 
