@@ -16,6 +16,12 @@ To get the most recent version reflected by this git repo, install with
 
 ```pip install -e "git://github.com/connorcoley/rdchiral.git#egg=rdchiral"```
 
+## Fast C++ version (rdchiral_cpp)
+
+A fast C++ implementation ([rdchiral_cpp](https://gitlab.com/ljn917/rdchiral_cpp)) is available as a drop-in replacement. It provides ~10x speedup. To install from anaconda, run
+
+```conda install -c conda-forge -c ljn917 rdchiral_cpp```
+
 ## Documentation
 
 See ```rdchiral/main.py``` for a brief description of expected behavior and a few basic examples of how to use the wrapper. 
