@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="rdchiral",
-    version="1.0.0",
+    version="1.1.0a",
     author="Connor Coley",
     author_email="ccoley@mit.edu",
     description="Wrapper for RDKit's RunReactants to improve stereochemistry handling",
