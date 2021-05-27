@@ -25,6 +25,5 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
       run: |
-        rm -r dist/*
         python setup.py sdist bdist_wheel
         twine upload --repository testpypi dist/*
