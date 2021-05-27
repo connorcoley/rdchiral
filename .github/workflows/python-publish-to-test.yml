@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: Set up Python to test pypi
-    - uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
