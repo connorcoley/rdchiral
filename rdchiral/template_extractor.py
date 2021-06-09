@@ -7,7 +7,7 @@ from rdkit.Chem.rdchem import ChiralType
 
 VERBOSE = False
 USE_STEREOCHEMISTRY = True
-MAXIMUM_NUMBER_UNMAPPED_PRODUCT_ATOMS = 5
+MAXIMUM_NUMBER_UNMAPPED_PRODUCT_ATOMS = 10
 INCLUDE_ALL_UNMAPPED_REACTANT_ATOMS = True
 
 
@@ -148,12 +148,14 @@ def get_frag_around_tetrahedral_center(mol, idx):
     # returned fragment.
     # Likely a better way to do this, but chiral tags seem to be cleaned 
     # by rdkit when obtained from a mol vs. from each atom individually
-    init_frag = Chem.MolFragmentToSmiles(mol, ids_to_include)
+    init_frag = Chem.MolFragmentToSmiles(mol, ids_to_include, isomericSmiles=True,
+                                    allBondsExplicit=True, allHsExplicit=True)
 
     # assuming that for this task, only the chirality of mapped atoms in the fragment
     # matters -- need to double check this 
     # Get a list of each mapped atom token in the fragment
-    mapped_atom_tokens = re.findall('\[[0-9]+.*?[0-9]+\]', init_frag)
+    mapped_atom_tokens = re.findall('\[[0-9]+.*?:[0-9]+\]', init_frag)
+
     map_num_to_chi = {int(re.findall('(?<=\[)[0-9]+', token)[0]):('').join(re.findall('@+H?', token)) for token in mapped_atom_tokens}
 
     symbols = []
@@ -669,11 +671,24 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
                     symbol = get_strict_smarts_for_atom(atom)
                     symbol_replacements.append((atom.GetIdx(), symbol))
 
+        init_frag = Chem.MolFragmentToSmiles(mol, atoms_to_use, isomericSmiles=True,
+                                    allBondsExplicit=True, allHsExplicit=True)
+        # assuming that for this task, only the chirality of mapped atoms in the fragment
+        # matters -- need to double check this 
+        # Get a list of each mapped atom token in the fragment
+        mapped_atom_tokens = ['['+token for token in init_frag.split('[') if len(re.findall('(?<=:)[0-9]+(?=\])', token))>0]
+        map_num_to_chi = {int(re.findall('(?<=:)[0-9]+(?=\])', token)[0]):('').join(re.findall('@+H?', token)) for token in mapped_atom_tokens}
         # Define new symbols based on symbol_replacements
         symbols = [atom.GetSmarts() for atom in mol.GetAtoms()]
         for (i, symbol) in symbol_replacements:
             symbols[i] = symbol
-
+        for i, symbol in enumerate(symbols):
+            if ':' in symbol:
+                map_num = int(re.findall('(?<=:)[0-9]+(?=\])', symbol)[0])
+                if map_num in map_num_to_chi.keys():
+                    chi_symbol = map_num_to_chi[map_num]
+                    symbol = re.sub('@+H?', chi_symbol, symbol)
+                    symbols[i] = symbol
         if not atoms_to_use:
             continue
 
@@ -751,7 +766,6 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
                 atom.SetIsotope(0)
 
         if not tetra_consistent:
-            print ("Could not find consistent tetrahedral centers: \n", [Chem.MolToSmiles(mol) for mol in mols])
             raise ValueError('Could not find consistent tetrahedral mapping, {} centers'.format(
                 len(tetra_map_nums)))
 
