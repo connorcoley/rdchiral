@@ -1,3 +1,5 @@
+[![PyPI version](https://badge.fury.io/py/rdchiral.svg)](https://badge.fury.io/py/rdchiral)
+
 # rdchiral
 Wrapper for RDKit's RunReactants to improve stereochemistry handling
 
