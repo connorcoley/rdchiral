@@ -93,18 +93,70 @@ def set_isotope_to_equal_mapnum(mol):
     for a in mol.GetAtoms():
         if a.HasProp('molAtomMapNumber'):
             a.SetIsotope(int(a.GetProp('molAtomMapNumber')))
-            
+
+def _invert_smarts_chirality_for_match(match, unmapped_only = True):
+    """
+    helper function for `invert_chirality_around_unmapped_ring_closure`
+    input is a re.match object that matches the portion of an atom token
+    where chirality is defined 
+    """
+    #only want to change unmapped token:
+    tetrahedral_token = match.group(1)
+    if ':' in tetrahedral_token and unmapped_only:
+        return tetrahedral_token
+
+    if '@@' in tetrahedral_token:
+        return tetrahedral_token.replace('@@', '@') 
+    elif '@' in tetrahedral_token:
+        return tetrahedral_token.replace('@', '@@')
+    else:
+        print ('Not a tetrahedral token:', tetrahedral_token)
+        return tetrahedral_token
+
+def invert_chirality_around_unmapped_ring_closure(smarts):
+    """
+    Return a smarts string with opposite chiral tags for atoms that precede a
+    ring closure token
+    """
+    return re.sub('(\[C@+H?\])(?=.?[1-9])', _invert_smarts_chirality_for_match, smarts)     
+
 def get_frag_around_tetrahedral_center(mol, idx):
     '''Builds a MolFragment using neighbors of a tetrahedral atom,
     where the molecule has already been updated to include isotopes'''
     ids_to_include = [idx]
     for neighbor in mol.GetAtomWithIdx(idx).GetNeighbors():
         ids_to_include.append(neighbor.GetIdx())
-    symbols = ['[{}{}]'.format(a.GetIsotope(), a.GetSymbol()) if a.GetIsotope() != 0\
-               else '[#{}]'.format(a.GetAtomicNum()) for a in mol.GetAtoms()]
+    # Get an initial smiles string for the fragment of the molecule -- 
+    # This string is used to get the correct chirality for the final, more general
+    # returned fragment.
+    # Likely a better way to do this, but chiral tags seem to be cleaned 
+    # by rdkit when obtained from a mol vs. from each atom individually
+    init_frag = Chem.MolFragmentToSmiles(mol, ids_to_include, isomericSmiles=True,
+                                    allBondsExplicit=True, allHsExplicit=True)
+    # assuming that for this task, only the chirality of mapped atoms in the fragment
+    # matters -- need to double check this 
+    # Get a list of each mapped atom token in the fragment
+    mapped_atom_tokens = re.findall('\[[0-9]+.*?:[0-9]+\]', init_frag)
+    map_num_to_chi = {int(re.findall('(?<=\[)[0-9]+', token)[0]):('').join(re.findall('@+H?', token)) for token in mapped_atom_tokens}
+    symbols = []
+    for a in mol.GetAtoms():
+        at_tag = ''
+        iso_tag = ''
+        chi_tag = ''
+        if a.GetIsotope() != 0:
+            at_tag = a.GetSymbol()
+            iso_tag = a.GetIsotope()
+
+            if iso_tag in map_num_to_chi.keys():
+                chi_tag = map_num_to_chi[iso_tag]
+        else:
+            at_tag = '#{}'.format(a.GetAtomicNum())
+
+        symbol = '[{}{}{}]'.format(iso_tag, at_tag, chi_tag)
+        symbols.append(symbol)
     return Chem.MolFragmentToSmiles(mol, ids_to_include, isomericSmiles=True,
-                                   atomSymbols=symbols, allBondsExplicit=True,
-                                   allHsExplicit=True)
+                                atomSymbols=symbols, allBondsExplicit=True,
+                                allHsExplicit=True)
             
 def check_tetrahedral_centers_equivalent(atom1, atom2):
     '''Checks to see if tetrahedral centers are equivalent in
@@ -557,11 +609,28 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
                     atoms_to_use.append(atom.GetIdx())
                     symbol = get_strict_smarts_for_atom(atom)
                     symbol_replacements.append((atom.GetIdx(), symbol))
-
+   
+        init_frag = Chem.MolFragmentToSmiles(mol, atoms_to_use, isomericSmiles=True,
+                                    allBondsExplicit=True, allHsExplicit=True)
+        # assuming that for this task, only the chirality of mapped atoms in the fragment
+        # matters -- need to double check this 
+        # Get a list of each mapped atom token in the fragment
+        mapped_atom_tokens = ['['+token for token in init_frag.split('[') if len(re.findall('(?<=:)[0-9]+(?=\])', token))>0]
+        map_num_to_chi = {int(re.findall('(?<=:)[0-9]+(?=\])', token)[0]):('').join(re.findall('@+H?', token)) for token in mapped_atom_tokens}
         # Define new symbols based on symbol_replacements
         symbols = [atom.GetSmarts() for atom in mol.GetAtoms()]
         for (i, symbol) in symbol_replacements:
             symbols[i] = symbol
+
+        #make best first guess for the chiral tag of each symbol
+        for i, symbol in enumerate(symbols):
+            if ':' in symbol:
+                map_num = int(re.findall('(?<=:)[0-9]+(?=\])', symbol)[0])
+                if map_num in map_num_to_chi.keys():
+                    chi_symbol = map_num_to_chi[map_num]
+                    symbol = re.sub('@+H?', chi_symbol, symbol)
+                    symbols[i] = symbol
+
 
         if not atoms_to_use: 
             continue
@@ -573,10 +642,13 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
         while not tetra_consistent and num_tetra_flips < 100:
             mol_copy = deepcopy(mol)
             [x.ClearProp('molAtomMapNumber') for x in mol_copy.GetAtoms()]   
-            this_fragment = AllChem.MolFragmentToSmiles(mol_copy, atoms_to_use, 
+            this_fragment_no_isotope = AllChem.MolFragmentToSmiles(mol_copy, atoms_to_use, 
                 atomSymbols=symbols, allHsExplicit=True, 
                 isomericSmiles=USE_STEREOCHEMISTRY, allBondsExplicit=True)
-
+            # explicitly set isotope labels in the SMARTS string to avoid strange behavior downstream
+            this_fragment = ']'.join([re.sub('(\[)(.*?\:)([0-9]*)', r'\1\3\2\3', token) for token in this_fragment_no_isotope.split(']')])
+            this_fragment = invert_chirality_around_unmapped_ring_closure(this_fragment)
+            
             # Figure out what atom maps are tetrahedral centers
             # Set isotopes to make sure we're getting the *exact* match we want
             this_fragment_mol = AllChem.MolFromSmarts(this_fragment)
@@ -631,7 +703,7 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
         if not tetra_consistent:
             raise ValueError('Could not find consistent tetrahedral mapping, {} centers'.format(len(tetra_map_nums)))
 
-        fragments += '(' + this_fragment + ').'
+        fragments += '(' + this_fragment_no_isotope + ').'
         mols_changed.append(Chem.MolToSmiles(clear_mapnum(Chem.MolFromSmiles(Chem.MolToSmiles(mol, True))), True))
 
     # auxiliary template information: is this an intramolecular reaction or dimerization?
@@ -640,13 +712,15 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
     
     return fragments[:-1], intra_only, dimer_only
 
-def canonicalize_transform(transform):
+def canonicalize_transform(transform, fix_cycle_chirality=True):
     '''This function takes an atom-mapped SMARTS transform and
     converts it to a canonical form by, if nececssary, rearranging
     the order of reactant and product templates and reassigning
     atom maps.'''
 
     transform_reordered = '>>'.join([canonicalize_template(x) for x in transform.split('>>')])
+    if fix_cycle_chirality:
+        transform_reordered = invert_chirality_around_unmapped_ring_closure(transform_reordered)
     return reassign_atom_mapping(transform_reordered)
 
 def canonicalize_template(template):
