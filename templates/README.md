@@ -33,7 +33,7 @@ Run `clean_and_extract_uspto.py` script. This will try to use all the CPU cores 
 $ python clean_and_extract_uspto.py
 ```
 
-This will generate `data/uspto.reactions.json.gz` and `data/uspto.templates.json.gz`. These two files can also be downloaded directly from [here](https://chemrxiv.org/articles/RDChiral_An_RDKit_Wrapper_for_Handling_Stereochemistry_in_Retrosynthetic_Template_Extraction_and_Application/7949024) if you do not wish to re-run the extraction code.
+This will generate `data/uspto.reactions.json.gz` and `data/uspto.templates.json.gz`. These two files can also be downloaded directly from [here](https://chemrxiv.org/engage/chemrxiv/article-details/60c741240f50dbe270395a6d) if you do not wish to re-run the extraction code.
 
 TODO:
 * better documentation
