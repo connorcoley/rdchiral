@@ -13,7 +13,7 @@ from rdchiral.initialization import rdchiralReaction, rdchiralReactants
 from rdchiral.chiral import template_atom_could_have_been_tetra, copy_chirality,\
     atom_chirality_matches
 from rdchiral.clean import canonicalize_outcome_smiles, combine_enantiomers_into_racemic
-from rdchiral.bonds import BondDirOpposite, restore_bond_stereo_to_sp2_atom
+from rdchiral.bonds import BondDirOpposite, restore_bond_stereo_to_sp2_atom, bond_dirs_by_mapnum, correct_conjugated
 
 '''
 This file contains the main functions for running reactions. 
@@ -423,6 +423,7 @@ def rdchiralRun(rxn, reactants, keep_mapnums=False, combine_enantiomers=True, re
 
         ###############################################################################
         # Correct bond directionality in the outcome
+        initial_bond_dirs = bond_dirs_by_mapnum(outcome)
         for b in outcome.GetBonds():
             if b.GetBondType() != BondType.DOUBLE:
                 continue
@@ -483,6 +484,12 @@ def rdchiralRun(rxn, reactants, keep_mapnums=False, combine_enantiomers=True, re
                     print(Chem.MolToSmiles(outcome, True))
                     print('Uh oh, looks like bond direction is only specified for half of this bond?')
 
+        #Need to check whether a conjugated system was changed.
+        corrected = correct_conjugated(initial_bond_dirs, outcome)
+        if corrected:
+            if PLEVEL >= 5: print('Found a corrupted conjugated system and corrected it')
+            
+        
         ###############################################################################
 
         #Keep track of the reacting atoms for later use in grouping
