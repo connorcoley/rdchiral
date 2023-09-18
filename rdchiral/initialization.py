@@ -93,12 +93,13 @@ class rdchiralReactants(object):
     Args:
         reactant_smiles (str): Reactant SMILES string
     '''
-    def __init__(self, reactant_smiles):
+    def __init__(self, reactant_smiles, custom_reactant_mapping=False):
         # Keep original smiles, useful for reporting
         self.reactant_smiles = reactant_smiles
+        self.custom_mapping = custom_reactant_mapping
 
         # Initialize into RDKit mol
-        self.reactants = initialize_reactants_from_smiles(reactant_smiles)
+        self.reactants = initialize_reactants_from_smiles(reactant_smiles, custom_reactant_mapping)
 
         # Set mapnum->atom dictionary
         # all reactant atoms must be mapped after initialization, so this is safe
@@ -107,7 +108,7 @@ class rdchiralReactants(object):
 
         # Create copy of molecule without chiral information, used with
         # RDKit's naive runReactants
-        self.reactants_achiral = initialize_reactants_from_smiles(reactant_smiles)
+        self.reactants_achiral = initialize_reactants_from_smiles(reactant_smiles, custom_reactant_mapping)
         [a.SetChiralTag(ChiralType.CHI_UNSPECIFIED) for a in self.reactants_achiral.GetAtoms()]
         [(b.SetStereo(BondStereo.STEREONONE), b.SetBondDir(BondDir.NONE)) \
             for b in self.reactants_achiral.GetBonds()]
@@ -167,7 +168,7 @@ def initialize_rxn_from_smarts(reaction_smarts):
 
     return rxn
 
-def initialize_reactants_from_smiles(reactant_smiles):
+def initialize_reactants_from_smiles(reactant_smiles, custom_reactant_mapping):
     '''Initialize RDKit molecule from SMILES string
 
     Args:
@@ -183,7 +184,8 @@ def initialize_reactants_from_smiles(reactant_smiles):
     # To have the product atoms match reactant atoms, we
     # need to populate the map number field, since this field
     # gets copied over during the reaction via reactant_atom_idx.
-    [a.SetAtomMapNum(i+1) for (i, a) in enumerate(reactants.GetAtoms())]
+    if not custom_reactant_mapping:
+        [a.SetAtomMapNum(i+1) for (i, a) in enumerate(reactants.GetAtoms())]
     if PLEVEL >= 2: print('Initialized reactants, assigned map numbers, stereochem, flagpossiblestereocenters')
     return reactants
 
