@@ -76,7 +76,7 @@ template.
 
 '''
 
-def rdchiralRunText(reaction_smarts, reactant_smiles, **kwargs):
+def rdchiralRunText(reaction_smarts, reactant_smiles, custom_reactant_mapping=False, **kwargs):
     '''Run from SMARTS string and SMILES string. This is NOT recommended
     for library application, since initialization is pretty slow. You should
     separately initialize the template and molecules and call run()
@@ -90,7 +90,7 @@ def rdchiralRunText(reaction_smarts, reactant_smiles, **kwargs):
         list: List of outcomes from `rdchiralRun`
     '''
     rxn = rdchiralReaction(reaction_smarts)
-    reactants = rdchiralReactants(reactant_smiles)
+    reactants = rdchiralReactants(reactant_smiles, custom_reactant_mapping)
     return rdchiralRun(rxn, reactants, **kwargs)
 
 def rdchiralRun(rxn, reactants, keep_mapnums=False, combine_enantiomers=True, return_mapped=False):

@@ -1,0 +1,50 @@
+[
+    {
+        "smarts": "[C;R:10][O;R:2][Xe;R:3][O;R:4][C;R:5]>>[C:10][O:2].[O;R:4][C;R:5]",
+        "smiles": "[C:10]1[C:9][O:8][Xe:7][O:6]1",
+        "expected": ["[C:10]([C:9][OH:8])[OH:6]"],
+        "description": "Test custom atom mapping in reactant"
+    },
+	{
+		"smarts": "[C:1](=[O:3])[OH:2]>>[C:1](=[O:3])[O:2]CC",
+		"smiles": "[OH:10][C:11](=[O:12])[CH2:13][CH2:14][CH2:15][CH2:16][CH2:17][CH3:18]",
+		"expected": ["[CH3:18][CH2:17][CH2:16][CH2:15][CH2:14][CH2:13][C:11](=[O:12])[O:10][CH2:900][CH3:901]"],
+		"description": "Testing achiral transformations with chiral molecules (not in template): Preparing a carboxylic acid from hydrolysis of an ethyl ester"
+	},
+	{
+		"smarts": "[C:1](=[O:3])[OH:2]>>[C:1](=[O:3])[O:2]CC",
+		"smiles": "[OH:10][C:11](=[O:12])[CH2:13][CH2:14][CH2:15][CH2:16][C@H:17]([Cl:18])[C:19]",
+		"expected": ["[CH3:901][CH2:900][O:10][C:11](=[O:12])[CH2:13][CH2:14][CH2:15][CH2:16][C@@H:17]([C:19])[Cl:18]"],
+		"description": "Testing achiral transformations with chiral molecules (not in template): Preparing a carboxylic acid from hydrolysis of an ethyl ester"
+	},
+	{
+		"smarts": "[C:4][C:1](=[O:3])[OH:2]>>[C:4][C:1](=[O:3])[O:2]CC",
+		"smiles": "[OH:10][C:11](=[O:12])[C@H:13]([Cl:14])[CH3:15]",
+		"expected": ["[CH3:901][CH2:900][O:10][C:11](=[O:12])[C@@H:13]([CH3:15])[Cl:14]"],
+		"description": "Testing achiral transformations with chiral molecules (partially in template, but auxiliary): Preparing a carboxylic acid from hydrolysis of an ethyl ester"
+	},
+	{
+		"smarts": "[C:1][CH:2]([CH3:3])[O:4][C:5]>>[C:1][CH:2]([CH3:3])[OH:4].O[C:5]",
+		"smiles": "[CH3:10][CH2:11][CH2:12][CH2:13][C@@H:14]([O:15][CH2:16][CH2:17])[CH3:18]",
+		"expected": [],
+		"description": "Testing achiral transformations with chiral molecules (fully in template): Alkylation reaction with unspecified chirality, template could have specified"
+	},
+	{
+		"smarts": "[C:1][C@H:2]([CH3:3])[I:4]>>[C:1][C@@H:2]([CH3:3])Br",
+		"smiles": "[CH3:10][CH2:11][CH2:12][CH2:13][CH:14]([I:15])[CH3:16]",
+		"expected": [],
+		"description": "Testing chiral transformations with achiral molecules: SN2 with inversion of a tetrahedral center"
+	},
+	{
+		"smarts": "[C:1]/[CH:2]=[CH:3]\\[C:4]>>[C:1][CH0:2]#[CH0:3][C:4]",
+		"smiles": "[CH3:10][CH2:11][CH2:12]/[CH:13]=[CH:14]\\[CH2:15][CH3:16]",
+		"expected": ["[CH3:16][CH2:15][C:14]#[C:13][CH2:12][CH2:11][CH3:10]"],
+		"description": "Testing chiral transformations with chiral molecules: Reaction expects cis double bond: Molecule has explicit cis double bond: explicit cis"
+	},
+	{
+		"smarts": "[C:1](=[O:3])[O:2][C:4]>>[C:1](=[O:3])[OH:2].O[C:4]",
+		"smiles": "[CH2:10]1[C:11](=[O:12])[O:13][CH2:14][CH2:15][CH2:16]1",
+		"expected": ["[O:12]=[C:11]([OH:13])[CH2:10][CH2:16][CH2:15][CH2:14][OH:900]"],
+		"description": "Accidental fragmentation: intramolecular esterification"
+	}
+]
