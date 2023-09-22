@@ -735,7 +735,7 @@ def extract_from_reaction(reaction):
             ]
             if len(unmapped_ids) > MAXIMUM_NUMBER_UNMAPPED_PRODUCT_ATOMS:
                 # Skip this example - too many unmapped product atoms!
-                return
+                return {'reaction_id': reaction['_id']}
             # Define new atom symbols for fragment with atom maps, generalizing fully
             atom_symbols = ['[{}]'.format(a.GetSymbol()) for a in prod_atoms]
             # And bond symbols...
@@ -765,7 +765,7 @@ def extract_from_reaction(reaction):
         if VERBOSE:
             print('Could not get changed atoms')
             print('ID: {}'.format(reaction['_id']))
-        return
+        return {'reaction_id': reaction['_id']}
     if not changed_atom_tags:
         if VERBOSE:
             print('No atoms changed?')
