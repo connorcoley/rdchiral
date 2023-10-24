@@ -425,4 +425,80 @@ def restore_bond_stereo_to_sp2_atom(a, bond_dirs_by_mapnum):
                             bond_to_spec.SetBondDir(bond_dir)
                         return True 
 
-    return False
+    return False 
+
+def correct_conjugated(initial_bond_dirs, outcome):
+    '''Checks whether the copying over of single-bond directions (ENDUPRIGHT, ENDDOWNRIGHT) was
+    corrupted for a conjugated system, where parts of the directions were specified by the template
+    and parts were copied from the reactants.
+    Args:
+        initial_bond_dirs - dictionary of (begin_mapnum, end_mapnum): bond_dir
+            that defines if a bond is ENDUPRIGHT or ENDDOWNRIGHT. The reverse
+            key is also included with the reverse bond direction. If the source
+            molecule did not have a specified chirality at this double bond, then
+            the mapnum tuples will be missing from the dict
+        outcome (rdkit.Chem.rdChem.Mol): RDKit molecule
+    Returns:
+        bool: Returns True if a conjugated system was corrected
+    '''
+
+    final_bond_dirs=bond_dirs_by_mapnum(outcome)
+    conjugated=[]
+    for b in outcome.GetBonds():
+        if b.GetIsConjugated():
+            conjugated.append((b.GetBeginAtom().GetAtomMapNum(), b.GetEndAtom().GetAtomMapNum()))
+    if PLEVEL >= 2: print('conjugated: ', conjugated)
+
+    # connectivity of conjugated systems
+    # DFS may be better for large systems
+    isolated_conjugated = []
+    for i, j in conjugated:
+        found = False
+        for c in isolated_conjugated:
+            if i in c or j in c:
+                found = True
+                c.add(i)
+                c.add(j)
+                break
+        if not found:
+            isolated_conjugated.append({i, j})
+    if PLEVEL >= 2: print('isolated_conjugated: ', isolated_conjugated)
+
+    need_to_change_dirs={}
+    inverted_dirs = []
+    new_dirs = []
+    for pair in final_bond_dirs:
+        if pair in initial_bond_dirs:
+            if final_bond_dirs[pair] != initial_bond_dirs[pair]:
+                need_to_change_dirs[pair] = initial_bond_dirs[pair]
+                inverted_dirs.append(pair)
+        else:
+            new_dirs.append(pair)
+    if PLEVEL >= 2:
+        print('new_dirs: ', new_dirs)
+        print('inverted_dirs: ', inverted_dirs)
+
+    isolated_conjugated_need_fix = [False]*len(isolated_conjugated)
+    for i, conj in enumerate(isolated_conjugated):
+        for pair in inverted_dirs:
+            if pair[0] in conj or pair[1] in conj:
+                isolated_conjugated_need_fix[i] = True
+                break
+    if PLEVEL >= 2: print('isolated_conjugated_need_fix: ', isolated_conjugated_need_fix)
+
+    for pair in new_dirs:
+        for need_fix, conj in zip(isolated_conjugated_need_fix, isolated_conjugated):
+            if need_fix and (pair[0] in conj or pair[1] in conj):
+                need_to_change_dirs[pair] = BondDirOpposite[final_bond_dirs[pair]]
+                break
+    if PLEVEL >= 2: print('need_to_change_dirs (final): ', need_to_change_dirs)
+
+    changed = False
+    for b in outcome.GetBonds():
+        bam = b.GetBeginAtom().GetAtomMapNum()
+        bbm = b.GetEndAtom().GetAtomMapNum()
+        if (bam,bbm) in need_to_change_dirs:
+            b.SetBondDir(need_to_change_dirs[(bam,bbm)])
+            changed = True
+            
+    return changed

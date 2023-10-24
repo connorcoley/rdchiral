@@ -256,5 +256,11 @@
         "smiles": "O=[N+]([O-])c1ccccc1",
         "expected": ["O=[N+]([O-])O.c1ccccc1"],
         "description": "Nitration template with 'hypervalent' nitrogen"
+    },
+    {
+        "smarts": "[C:1]/[C:2](-[C;D1;H3:3])=[C:4]/[CH2;D2;+0:5]-[OH;D1;+0:6]>>[C:1]/[C:2](-[C;D1;H3:3])=[C:4]/[CH;D2;+0:5]=[O;H0;D1;+0:6]",
+        "smiles": "[OH:6][CH2:49]/[CH:21]=[C:34](/[CH:8]=[CH:48]/[CH3:28])[CH3:35]",
+        "expected": ["C/C=C/C(C)=C/C=O"],
+        "description": "Bond direction changes in conjugated double bonds, github #39"
     }
 ]
