@@ -1,0 +1,201 @@
+[
+  {
+    "reactants": "[O:1]=[c:2]1[cH:3][cH:4][n:5]([C@@H:9]2[O:10][C@H:11]([CH2:12][OH:13])[C@:14]([OH:15])([C:16]#[CH:17])[C@H:18]2[OH:19])[c:6](=[O:7])[nH:8]1",
+    "products": "O=[PH](=O)(O)[O:13][CH2:12][C@H:11]1[O:10][C@@H:9]([n:5]2[cH:4][cH:3][c:2](=[O:1])[nH:8][c:6]2=[O:7])[C@H:18]([OH:19])[C@@:14]1([OH:15])[C:16]#[CH:17]",
+    "_id": "13037",
+    "expected_template": "[C:1]-[O;H0;D2;+0:2]-[PH;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[O;H1;D1;+0]>>[C:1]-[OH;D1;+0:2]",
+    "description": "ATP + 1-(3-C-ethynyl-beta-D-ribopentofuranosyl)uridine = ADP + 1-(3-C-ethynyl-beta-D-ribopentofuranosyl)uridine 5'-phosphate",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[C:2]1[CH:3]=[C:4]2[CH2:5][CH2:6][C@@H:7]3[C@H:8]([CH2:9][CH2:10][C@:11]4([CH3:12])[C@@H:13]([C@H:17]([CH3:18])[CH2:19][CH2:20][CH2:21][CH:22]([CH3:23])[CH3:24])[CH2:14][CH2:15][C@@H:16]34)[C@@:25]2([CH3:26])[CH2:27][CH2:28]1",
+    "products": "[OH:1][C@@H:2]1[CH2:3][C:4]2=[CH:5][CH2:6][C@@H:7]3[C@H:8]([CH2:9][CH2:10][C@:11]4([CH3:12])[C@@H:13]([C@H:17]([CH3:18])[CH2:19][CH2:20][CH2:21][CH:22]([CH3:23])[CH3:24])[CH2:14][CH2:15][C@@H:16]34)[C@@:25]2([CH3:26])[CH2:27][CH2:28]1",
+    "_id": "20436",
+    "expected_template": "[C:1]-[C;H0;D3;+0:2](-[CH2;D2;+0:5]-[C@H;D3;+0:6](-[C:7])-[OH;D1;+0:8])=[CH;D2;+0:3]-[C:4]>>[C:1]-[C;H0;D3;+0:2](-[CH2;D2;+0:3]-[C:4])=[CH;D2;+0:5]-[C;H0;D3;+0:6](-[C:7])=[O;H0;D1;+0:8]",
+    "description": "Cholesterol + NAD+ <=> Cholest-4-en-3-one + NADH + H+",
+    "valid": "True"
+  },
+  {
+    "reactants":"[O:1]=[C:2]([OH:3])[CH2:4][CH2:5][CH2:6]/[CH:7]=[CH:8]\\[CH2:9]/[CH:10]=[CH:11]\\[CH2:12]/[CH:13]=[CH:14]\\[CH2:15]/[CH:16]=[CH:17]\\[CH2:18][CH2:19][CH2:20][CH2:21][CH3:22]",
+    "products":"OO[C@H:17](/[CH:16]=[CH:15]/[C@@H:14]1[C@@H:10]([CH2:9]/[CH:8]=[CH:7]\\[CH2:6][CH2:5][CH2:4][C:2](=[O:1])[OH:3])[C@H:11]2OO[C@@H:13]1[CH2:12]2)[CH2:18][CH2:19][CH2:20][CH2:21][CH3:22]",
+    "_id": "11965",
+    "expected_template":"[C:1]-[C@@H;D3;+0:2](/[CH;D2;+0:3]=[CH;D2;+0:4]/[C@@H;D3;+0:5]1-[C@@H;D3;+0:9](-[C:10]/[C:11]=[C:12])-[C@@H;D3;+0:8]2-[C:7]-[C@H;D3;+0:6]-1-[O;H0;D2;+0]-[O;H0;D2;+0]-2)-[O;H0;D2;+0]-[O;H1;D1;+0]>>[C:1]/[CH;D2;+0:2]=[CH;D2;+0:3]\\[CH2;D2;+0:4]/[CH;D2;+0:5]=[CH;D2;+0:6]\\[C:7]/[CH;D2;+0:8]=[CH;D2;+0:9]\\[C:10]/[C:11]=[C:12]",
+    "description": "arachidonate + AH2 + 2 O2 = prostaglandin G2 + A + H2O",
+    "valid": "True"
+  },
+  {
+    "reactants": "[OH:1][NH:2][c:3]1[cH:4][cH:5][cH:6][c:7]([OH:8])[cH:9]1",
+    "products": "[OH:1][c:4]1[c:3]([NH2:2])[cH:9][c:7]([OH:8])[cH:6][cH:5]1",
+    "_id": "2041",
+    "expected_template": "[NH2;D1;+0:2]-[c:3]:[c;H0;D3;+0:4](-[OH;D1;+0:1]):[c:5]>>[OH;D1;+0:1]-[NH;D2;+0:2]-[c:3]:[cH;D2;+0:4]:[c:5]",
+    "description": "3-hydroxyaminophenol = aminohydroquinone",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[c:2]1[nH:3][c:4]2[n:5][n:6][cH:7][n:8][c:9]2[c:10](=[O:11])[n:12]1[CH3:13]",
+    "products": "C[n:5]1[c:4]2[n:3][c:2](=[O:1])[n:12]([CH3:13])[c:10](=[O:11])[c:9]-2[n:8][cH:7][n:6]1",
+    "_id": "15448",
+    "expected_template": "[C;H3;D1;+0]-[n;H0;D3;+0:7]1:[#7;a:6]:[c:5]:[#7;a:4]:[c;H0;D3;+0:3]2:[c:2]:[#7;a:1]:[c:10]:[n;H0;D2;+0:9]:[c;H0;D3;+0:8]:1-2>>[#7;a:1]1:[c:2]:[c;H0;D3;+0:3]2:[#7;a:4]:[c:5]:[#7;a:6]:[n;H0;D2;+0:7]:[c;H0;D3;+0:8]:2:[nH;D2;+0:9]:[c:10]:1",
+    "description": "S-Adenosyl-L-methionine + Reumycin <=> S-Adenosyl-L-homocysteine + Toxoflavine",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[C:2]([OH:3])[CH2:4][CH2:5][C@@H:6]([CH3:7])[C@H:8]1[CH2:9][CH2:10][C@H:11]2[C@@H:12]3[CH2:13][CH2:14][C@@H:15]4[CH2:16][C@H:17]([OH:18])[CH2:19][CH2:20][C@:21]4([CH3:22])[C@H:23]3[CH2:24][CH2:25][C@:26]12[CH3:27]",
+    "products": "O[C@H:14]1[CH2:13][C@H:12]2[C@@H:11]3[CH2:10][CH2:9][C@H:8]([C@@H:6]([CH2:5][CH2:4][C:2](=[O:1])[OH:3])[CH3:7])[C@@:26]3([CH3:27])[CH2:25][CH2:24][C@@H:23]2[C@:21]2([CH3:22])[C@H:15]1[CH2:16][C@H:17]([OH:18])[CH2:19][CH2:20]2",
+    "_id": "10664",
+    "expected_template": "[C:1]-[C@@H;D3;+0:2](-[C:3])-[O;H1;D1;+0]>>[C:1]-[CH2;D2;+0:2]-[C:3]",
+    "description": "lithocholate + reduced [NADPH-hemoprotein reductase] + oxygen = hyodeoxycholate + oxidized [NADPH-hemoprotein reductase] + H2O",
+    "valid": "True"
+  },
+  {
+    "reactants": "O[C:5]([CH2:4][C:2](=[O:1])[OH:3])([C:6](=[O:7])[OH:8])[CH2:9][C:10](=[O:11])[OH:12]",
+    "products": "[O:1]=[C:2]([OH:3])/[CH:4]=[C:5](/[C:6](=[O:7])[OH:8])[CH2:9][C:10](=[O:11])[OH:12]",
+    "_id": "8339",
+    "expected_template":"[O;D1;H0:4]=[C:3](-[O;D1;H1:5])-[C:2]/[C;H0;D3;+0:1](=[CH;D2;+0:6]\\[C:7](=[O;D1;H0:8])-[O;D1;H1:9])-[C:10](=[O;D1;H0:11])-[O;D1;H1:12]>>O-[C;H0;D4;+0:1](-[C:2]-[C:3](=[O;D1;H0:4])-[O;D1;H1:5])(-[CH2;D2;+0:6]-[C:7](=[O;D1;H0:8])-[O;D1;H1:9])-[C:10](=[O;D1;H0:11])-[O;D1;H1:12]",
+    "description": "Citrate = cis-aconitate + H2O",
+    "valid": "True"
+  },
+  {
+    "reactants":"CCC(=O)/[CH:8]=[CH:7]\\[CH:6]=[C:4](/[C:2](=[O:1])[OH:3])[OH:5]",
+    "products":"[O:1]=[C:2]([OH:3])/[C:4]([OH:5])=[CH:6]\\[CH:7]=[CH2:8]",
+    "_id": "26604",
+    "expected_template":"[C:4]=[C:3]\\[C:2]=[CH2;D1;+0:1]>>C-C-C(=O)/[CH;D2;+0:1]=[C:2]\\[C:3]=[C:4]",
+    "description": "2-Hydroxy-6-oxo-octa-2,4-dienoate + H2O <=> 2-Hydroxy-2,4-pentadienoate + Propanoate",
+    "valid": "False"
+  },
+  {
+    "reactants":"O=[C:4]([C:2](=[O:1])[OH:3])/[CH:5]=[CH:6]\\c1c(O)c[c:7]2[cH:8][cH:9][c:10]3[cH:11][cH:12][cH:13][c:14]4[cH:15][cH:16][c:17]1[c:18]2[c:19]34",
+    "products": "[O:1]=[C:2]([OH:3])[CH:4]1[CH2:5][CH:6]=[c:7]2[cH:8][cH:9][c:10]3[cH:11][cH:12][cH:13][c:14]4[cH:15][cH:16][c:17]1[c:18]2[c:19]34",
+    "_id": "5854",
+    "expected_template":"[O;D1;H0:10]=[C:9](-[O;D1;H1:11])-[CH;D3;+0:8]1-[CH2;D2;+0:7]-[CH;D2;+0:6]=[c;H0;D3;+0:1](:[c:2]):[c:3]:[c;H0;D3;+0:4]-1:[c:5]>>O-c1:c:[c;H0;D3;+0:1](:[c:2]):[c:3]:[c;H0;D3;+0:4](:[c:5]):c:1/[CH;D2;+0:6]=[CH;D2;+0:7]\\[C;H0;D3;+0:8](=O)-[C:9](=[O;D1;H0:10])-[O;D1;H1:11]",
+    "description": "cis-4-(7-Hydroxtpyren-8-yl)-2-oxobut-3-enoate <=> 7,8-Dihydropyrene-8-carboxylate",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:52]=[P:53]([OH:54])([OH:55])[CH2:56][NH2:57]",
+    "products": "CC(=O)[NH:57][CH2:56][P:53](=[O:52])([OH:54])[OH:55]",
+    "_id": "21631",
+    "expected_template": "[C:1]-[NH;D2;+0:2]-[C;H0;D3;+0](-[C;H3;D1;+0])=[O;H0;D1;+0]>>[C:1]-[NH2;D1;+0:2]",
+    "description": "(aminomethyl)phosphonate + acetyl-CoA = (acetamidomethyl)phosphonate + coenzyme A",
+    "valid": "True"
+  },
+  {
+    "reactants": "N[C@@H](CCCCN[C:8]([CH2:7][CH2:6][C@@H:4]([C:2](=[O:1])[OH:3])[NH2:5])=[O:9])C(=O)O",
+    "products": "[O:1]=[C:2]([OH:3])[C@H:4]1[NH:5][C:8](=[O:9])[CH2:7][CH2:6]1",
+    "_id": "27734",
+    "expected_template": "[C:2]-[C;H0;D3;+0:1](=[O;D1;H0:3])-[NH;D2;+0:4]-[C:5]-[C:6](=[O;D1;H0:7])-[O;D1;H1:8]>>N-[C@@H](-C-C-C-C-N-[C;H0;D3;+0:1](-[C:2])=[O;D1;H0:3])-C(-O)=O.[NH2;D1;+0:4]-[C:5]-[C:6](=[O;D1;H0:7])-[O;D1;H1:8]",
+    "description": "epsilon-(gamma-L-glutamyl)-L-lysine = L-lysine + 5-oxo-L-proline -- Checks stereochemistry in unmapped rings",
+    "valid": "True"
+  },
+  {
+    "reactants":"[O:1]=[C:2]([O:3][CH2:4]/[CH:5]=[C:6](\\[CH3:7])[CH2:8][CH2:9][CH2:10][C@H:11]([CH3:12])[CH2:13][CH2:14]/[CH:15]=[C:16](\\[CH3:17])[CH2:18][CH2:19][CH:20]=[C:21]([CH3:22])[CH3:23])[CH2:24][CH2:25][C@@H:26]1[c:27]2[n:28][c:29]([cH:30][c:31]3[nH:32][c:33]([cH:34][c:35]4[n:36][c:37]([cH:38][c:39]5[nH:40][c:41]6[c:42]([c:51]5[CH3:52])[C:43](=[O:44])[CH:45]([C:46](=[O:47])[O:48][CH3:49])[c:50]26)[CH:53]([CH2:54][CH3:55])[CH:56]4[CH3:57])[c:58]([C:59](=[O:60])[CH3:61])[c:62]3[CH3:63])[C@H:64]1[CH3:65]",
+    "products":"[O:1]=[C:2]([O:3][CH2:4]/[CH:5]=[C:6](\\[CH3:7])[CH2:8][CH2:9]/[CH:10]=[C:11](\\[CH3:12])[CH2:13][CH2:14]/[CH:15]=[C:16](\\[CH3:17])[CH2:18][CH2:19][CH:20]=[C:21]([CH3:22])[CH3:23])[CH2:24][CH2:25][C@@H:26]1[c:27]2[n:28][c:29]([cH:30][c:31]3[nH:32][c:33]([cH:34][c:35]4[n:36][c:37]([cH:38][c:39]5[nH:40][c:41]6[c:42]([c:51]5[CH3:52])[C:43](=[O:44])[CH:45]([C:46](=[O:47])[O:48][CH3:49])[c:50]26)[CH:53]([CH2:54][CH3:55])[CH:56]4[CH3:57])[c:58]([C:59](=[O:60])[CH3:61])[c:62]3[CH3:63])[C@H:64]1[CH3:65]",
+    "_id": "10839",
+    "expected_template": "[C:1]/[C;H0;D3;+0:2](-[C;D1;H3:3])=[CH;D2;+0:4]/[C:5]>>[C:1]-[C@@H;D3;+0:2](-[C;D1;H3:3])-[CH2;D2;+0:4]-[C:5]",
+    "description": "dihydrogeranylgeranyl bacteriopheophytin + NADP+ = geranylgeranyl bacteriopheophytin + NADPH + H+",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[C:2]1[CH:3]=[C:4]([OH:5])[CH2:6][CH:7]([OH:8])[CH2:9]1",
+    "products": "O=[C:4]([OH:5])[CH2:6][CH:7]([OH:8])[CH2:9][C:2](=[O:1])[CH3:3]",
+    "_id": "3367",
+    "expected_template": "[CH3;D1;+0:4]-[C:5]=[O;D1;H0:6].[C:1]-[C;H0;D3;+0:2](-[O;D1;H1:3])=[O;H0;D1;+0]>>[C:1]-[C;H0;D3;+0:2](-[O;D1;H1:3])=[CH;D2;+0:4]-[C:5]=[O;D1;H0:6]",
+    "description": "Dihydrophloroglucinol + H2O <=> 3-Hydroxy-5-oxohexanoate",
+    "valid": "True"
+  },
+  {
+    "reactants": "O[CH:32]([C:31]1=[C:30]([CH2:34][CH3:35])[c:17]2[n:16][c:15]1[cH:14][c:13]1[nH:12][c:11]([c:10]([CH3:42])[c:9]3[n:8][c:7]([c:22]4[c:21]5[nH:20][c:19]([cH:18]2)[c:27]([CH2:28][CH3:29])[c:26]5[C:24]([OH:25])=[CH:23]4)[C@@H:6]([CH2:5][CH2:4][C:2](=[O:1])[OH:3])[C@@H:43]3[CH3:44])[c:37]([CH3:38])[c:36]1[C@@H:39]([OH:40])[CH3:41])[OH:33]",
+    "products": "[O:1]=[C:2]([OH:3])[CH2:4][CH2:5][C@@H:6]1[c:7]2[n:8][c:9]([c:10]([CH3:42])[c:11]3[nH:12][c:13]([cH:14][c:15]4[n:16][c:17]([cH:18][c:19]5[nH:20][c:21]6[c:22]2[CH:23]=[C:24]([OH:25])[c:26]6[c:27]5[CH2:28][CH3:29])[C:30]([CH2:34][CH3:35])=[C:31]4[CH:32]=[O:33])[c:36]([C@@H:39]([OH:40])[CH3:41])[c:37]3[CH3:38])[C@H:43]1[CH3:44]",
+    "_id": "26689",
+    "expected_template": "[C:4]=[C:3]-[CH;D2;+0:1]=[O;H0;D1;+0:2]>>O-[CH;D3;+0:1](-[OH;D1;+0:2])-[C:3]=[C:4]",
+    "description": "a 7-(dihydroxymethyl)bacteriochlorophyllide c = a bacteriochlorophyllide e + H2O",
+    "valid": "True"
+  },
+  {
+    "reactants":"[OH:1][CH2:2][CH2:3][CH:4]([CH3:5])[CH2:6][CH2:7]/[CH:8]=[C:9](/[CH3:10])[CH2:11][CH2:12]/[CH:13]=[C:14](\\[CH3:15])[CH2:16][CH2:17]/[CH:18]=[C:19](\\[CH3:20])[CH2:21][CH2:22][CH:23]=[C:24]([CH3:25])[CH3:26]",
+    "products":"[OH:1][CH2:2]/[CH:3]=[C:4](/[CH3:5])[CH2:6][CH2:7]/[CH:8]=[C:9](/[CH3:10])[CH2:11][CH2:12]/[CH:13]=[C:14](\\[CH3:15])[CH2:16][CH2:17]/[CH:18]=[C:19](\\[CH3:20])[CH2:21][CH2:22][CH:23]=[C:24]([CH3:25])[CH3:26]",
+    "_id": "14326",
+    "expected_template":"[C:1]/[CH;D2;+0:2]=[C;H0;D3;+0:3](\\[C:4])-[C;D1;H3:5]>>[C:1]-[CH2;D2;+0:2]-[CH;D3;+0:3](-[C:4])-[C;D1;H3:5]",
+    "description": "ditrans,polycis-dolichol + NADP+ = ditrans,polycis-polyprenol + NADPH + H+",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[C:2]([OH:3])[C@@H:4]([NH:5][C:6](=[O:7])[CH2:8][c:9]1[cH:10][nH:11][c:12]2[cH:13][cH:14][cH:15][cH:16][c:17]12)[CH2:18][c:19]1[cH:20][cH:21][cH:22][cH:23][cH:24]1",
+    "products": "O[c:14]1[cH:13][c:12]2[nH:11][cH:10][c:9]([CH2:8][C:6]([NH:5][C@H:4]([C:2](=[O:1])[OH:3])[CH2:18][c:19]3[cH:20][cH:21][cH:22][cH:23][cH:24]3)=[O:7])[c:17]2[cH:16][cH:15]1",
+    "_id": "10937",
+    "expected_template": "[#7;a:1]:[c:2]:[c:3]:[c;H0;D3;+0:4](-[O;H1;D1;+0]):[c:5]>>[#7;a:1]:[c:2]:[c:3]:[cH;D2;+0:4]:[c:5]",
+    "description": "(indol-3-yl)acetyl-L-phenylalanine = (6-hydroxy-indol-3-yl)acetyl-L-phenylalanine",
+    "valid": "True"
+  },
+  {
+    "reactants":"[O:1]=[C:2]([OH:3])[CH2:4][CH2:5][CH2:6][CH2:7][CH2:8][CH2:9][CH2:10]/[CH:11]=[CH:12]\\[CH2:13][CH:14]1[O:15][CH:16]1[CH2:17]/[CH:18]=[CH:19]\\[CH2:20][CH3:21]",
+    "products":"O[CH:14]([CH2:13]/[CH:12]=[CH:11]\\[CH2:10][CH2:9][CH2:8][CH2:7][CH2:6][CH2:5][CH2:4][C:2](=[O:1])[OH:3])[CH:16]([OH:15])[CH2:17]/[CH:18]=[CH:19]\\[CH2:20][CH3:21]",
+    "_id": "6881",
+    "expected_template":"[C:1]=[C:2]\\[C:3]-[CH;D3;+0:4](-[O;H1;D1;+0])-[C:5]-[OH;D1;+0:6]>>[C:1]=[C:2]\\[C:3]-[CH;D3;+0:4]1-[C:5]-[O;H0;D2;+0:6]-1",
+    "description": "(9Z,15Z)-12,13-epoxy-octadeca-9,15-dienoate + H2O = (9Z,15Z)-12,13-dihydroxyoctadeca-9,15-dienoate",
+    "valid": "True"
+  },
+  {
+    "reactants": "O=P(O)(O)O[C:14](=[O:13])[NH2:15].[O:1]=[C:2]([OH:3])[C@@H:4]([NH:5][C:6](=[O:7])[CH3:8])[CH2:9][CH2:10][CH2:11][NH2:12]",
+    "products": "[O:1]=[C:2]([OH:3])[C@@H:4]([NH:5][C:6](=[O:7])[CH3:8])[CH2:9][CH2:10][CH2:11][NH:12][C:14](=[O:13])[NH2:15]",
+    "_id": "13585",
+    "expected_template": "[C:4]-[NH;D2;+0:5]-[C;H0;D3;+0:1](-[N;D1;H2:2])=[O;D1;H0:3]>>O-P(-O)(=O)-O-[C;H0;D3;+0:1](-[N;D1;H2:2])=[O;D1;H0:3].[C:4]-[NH2;D1;+0:5]",
+    "description": "carbamoyl phosphate + N2-acetyl-L-ornithine = phosphate + N-acetyl-L-citrulline",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[C:2]([OH:3])[C@@H:4]([OH:5])[CH:6]([CH3:7])[CH2:8][CH2:9][CH2:10][CH:11]([CH3:12])[CH2:13][CH2:14][CH2:15][CH:16]([CH3:17])[CH2:18][CH2:19][CH2:20][CH:21]([CH3:22])[CH3:23]",
+    "products": "[O:1]=[C:2]([OH:3])[C:4](=[O:5])[C@@H:6]([CH3:7])[CH2:8][CH2:9][CH2:10][C@H:11]([CH3:12])[CH2:13][CH2:14][CH2:15][C@H:16]([CH3:17])[CH2:18][CH2:19][CH2:20][CH:21]([CH3:22])[CH3:23]",
+    "_id": "1802",
+    "expected_template": "[C:1]-[C@H;D3;+0:2](-[C;D1;H3:3])-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[C:6](=[O;D1;H0:7])-[O;D1;H1:8]>>[C:1]-[CH;D3;+0:2](-[C;D1;H3:3])-[C@H;D3;+0:4](-[OH;D1;+0:5])-[C:6](=[O;D1;H0:7])-[O;D1;H1:8]",
+    "description": "L-2-hydroxyphytanate + O2 = 2-oxophytanate + H2O2",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[C:2]([OH:3])[C:4](=[O:5])[CH2:6][CH:7]([CH3:8])[CH3:9]",
+    "products": "[O:1]=[C:2]([OH:3])[C@H:4]([OH:5])[CH2:6][CH:7]([CH3:8])[CH3:9]",
+    "_id": "17282",
+    "expected_template": "[C:1]-[C@@H;D3;+0:2](-[OH;D1;+0:3])-[C:4](=[O;D1;H0:5])-[O;D1;H1:6]>>[C:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[C:4](=[O;D1;H0:5])-[O;D1;H1:6]",
+    "description": "2-oxo-4-methylpentanoate + NADH = (2R)-2-hydroxy-4-methylpentanoate + NAD+",
+    "valid": "True"
+  },
+  {
+    "reactants": "[O:1]=[C:2]([OH:3])[C:4]1=[CH:5][CH2:6][C@@H:7]([C:8]2=[CH:9][CH2:10][CH2:11][C:12]([CH3:13])([CH3:14])[C@@H:15]2[OH:16])[CH2:17][CH2:18]1",
+    "products": "[O:1]=[C:2]([OH:3])[c:4]1[cH:5][cH:6][c:7]([C:8]2=[CH:9][CH2:10][CH2:11][C:12]([CH3:13])([CH3:14])[C@@H:15]2[OH:16])[cH:17][cH:18]1",
+    "_id": "10060",
+    "expected_template": "[C:1]=[C:2]-[c;H0;D3;+0:3]1:[cH;D2;+0:4]:[cH;D2;+0:5]:[c;H0;D3;+0:6](-[C:7](=[O;D1;H0:8])-[O;D1;H1:9]):[cH;D2;+0:10]:[cH;D2;+0:11]:1>>[C:1]=[C:2]-[C@H;D3;+0:3]1-[CH2;D2;+0:4]-[CH2;D2;+0:5]-[C;H0;D3;+0:6](-[C:7](=[O;D1;H0:8])-[O;D1;H1:9])=[CH;D2;+0:10]-[CH2;D2;+0:11]-1",
+    "description": "zealexin A3 = zealexin C3",
+    "valid": "True"
+  },
+  {
+    "reactants": "C[C@H]1O[C@@H]([O:8][c:7]2[cH:6][cH:5][cH:4][c:3]3[c:9]2[C:10](=[O:11])[C:12]2=[C:13]([C:2]3=[O:1])[c:14]3[c:15]([OH:16])[cH:17][c:18]([CH3:24])[cH:19][c:20]3[CH2:21][C@H:22]2[OH:23])C[C@@H](O)[C@@H]1O",
+    "products": "[O:1]=[C:2]1[c:3]2[cH:4][cH:5][cH:6][c:7]([OH:8])[c:9]2[C:10](=[O:11])[C:12]2=[C:13]1[c:14]1[c:15]([OH:16])[cH:17][c:18]([CH3:24])[cH:19][c:20]1[CH2:21][C@H:22]2[OH:23]",
+    "_id": "20362",
+    "expected_template": "[OH;D1;+0:1]-[c:2]>>C-[C@H]1-O-[C@@H](-[O;H0;D2;+0:1]-[c:2])-C-[C@@H](-O)-[C@@H]-1-O",
+    "description": "11-Deoxylandomycinone <=> Landomycin H",
+    "valid": "True"
+  },
+  {
+    "reactants":"OC[C@H]1O[C@@H]([n:10]2[c:8](=[O:9])[nH:7][c:5](=[O:6])[c:4]3[nH:3][c:2](=[O:1])[nH:12][c:11]32)[C@H](O)[C@@H]1O",
+    "products":"[O:1]=[c:2]1[nH:3][c:4]2[c:5](=[O:6])[nH:7][c:8](=[O:9])[nH:10][c:11]2[nH:12]1",
+    "_id":"27334",
+    "expected_template":"[#7;a:5]:[c:4](:[c:6]:[#7;a:7]):[nH;D2;+0:1]:[c:2]:[#7;a:3]>>O-C-[C@H]1-O-[C@@H](-[n;H0;D3;+0:1](:[c:2]:[#7;a:3]):[c:4](:[#7;a:5]):[c:6]:[#7;a:7])-[C@H](-O)-[C@@H]-1-O",
+    "description":"uric acid ribonucleoside + phosphate = urate + D-ribose 1-phosphate -- deglycosylation",
+    "valid":"True"
+    },
+    {
+      "reactants":"[O:1]=[C:2]1[O:3][C@H:4]([CH2:5][OH:6])[C@@H:7]([OH:8])[C@@H:9]1[OH:10]",
+      "products":"O[C@H:4]([CH2:5][OH:6])[C@@H:7]([OH:8])[C@@H:9]([C:2](=[O:1])[OH:3])[OH:10]",
+      "_id":"83",
+      "expected_template":"[C:1]-[C@H;D3;+0:2](-[C:3])-[O;H1;D1;+0].[O;D1;H0:6]=[C:5]-[OH;D1;+0:4]>>[C:1]-[C@H;D3;+0:2](-[C:3])-[O;H0;D2;+0:4]-[C:5]=[O;D1;H0:6]",
+      "description":"D-arabinono-1,4-lactone + H2O = D-arabinonate"
+    },
+    {
+      "reactants":"[O:1]=[C:2]([OH:3])[CH2:4][CH2:5][CH2:6]/[CH:7]=[CH:8]\\[CH2:9]/[CH:10]=[CH:11]\\[CH2:12]/[CH:13]=[CH:14]\\[CH2:15]/[CH:16]=[CH:17]\\[CH2:18][CH2:19][CH2:20][CH2:21][CH3:22]",
+      "products":"O1[CH:16]([CH2:15]/[CH:14]=[CH:13]\\[CH2:12]/[CH:11]=[CH:10]\\[CH2:9]/[CH:8]=[CH:7]\\[CH2:6][CH2:5][CH2:4][C:2](=[O:1])[OH:3])[CH:17]1[CH2:18][CH2:19][CH2:20][CH2:21][CH3:22]",
+      "_id":"5153",
+      "expected_template":"[C:1]=[C:2]\\[C:3]-[CH;D3;+0:4]1-[O;H0;D2;+0]-[CH;D3;+0:5]-1-[C:6]>>[C:1]=[C:2]\\[C:3]/[CH;D2;+0:4]=[CH;D2;+0:5]\\[C:6]",
+      "description":"Arachidonate + Oxygen + NADPH + H+ <=> 14,15-EET + NADP+ + H2O",
+      "valid":"False"
+    }
+]
